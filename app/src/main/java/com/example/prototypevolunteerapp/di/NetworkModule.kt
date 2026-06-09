@@ -48,9 +48,17 @@ object NetworkModule {
                 .body(fixedBody.toResponseBody(contentType))
                 .build()
         }
+        
+        val ngrokInterceptor = Interceptor { chain ->
+            val request = chain.request().newBuilder()
+                .addHeader("ngrok-skip-browser-warning", "true")
+                .build()
+            chain.proceed(request)
+        }
 
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
+            .addInterceptor(ngrokInterceptor)
             .addInterceptor(localhostFixInterceptor)
             .addInterceptor(loggingInterceptor)
             .build()
