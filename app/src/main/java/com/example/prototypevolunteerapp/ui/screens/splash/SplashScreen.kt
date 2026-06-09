@@ -134,7 +134,7 @@ fun SplashScreen() {
     Box(
         modifier         = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF4F7EF)),
+            .background(Color(0xFFBFDCFE)),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -142,8 +142,8 @@ fun SplashScreen() {
             verticalArrangement = Arrangement.Center
         ) {
             Image(
-                painter            = painterResource(id = R.drawable.logo),
-                contentDescription = "AksiKita Logo",
+                painter            = painterResource(id = R.drawable.aksikitalogo),
+                contentDescription = "AksiKitalogo",
                 modifier           = Modifier
                     .size(260.dp)
                     .scale(logoScale)
@@ -160,7 +160,7 @@ fun SplashScreen() {
                     withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Kita") }
                 },
                 fontSize  = 19.sp,
-                color     = Color(0xFF6E8F6E),
+                color     = Color(0xFF24408F),
                 textAlign = TextAlign.Center,
                 modifier  = Modifier
                     .alpha(taglineAnim.value)
