@@ -2,20 +2,12 @@ package com.example.prototypevolunteerapp.ui.screens.organizer
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
- import androidx.compose.foundation.background
- import androidx.compose.foundation.layout.Box
- import androidx.compose.foundation.layout.offset
- import androidx.compose.foundation.layout.size
- import androidx.compose.foundation.shape.CircleShape
- import androidx.compose.runtime.derivedStateOf
- import androidx.compose.runtime.getValue
- import androidx.compose.runtime.remember
- import androidx.compose.ui.unit.dp
- import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -25,16 +17,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import com.example.prototypevolunteerapp.core.Routes
 import androidx.compose.runtime.*
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.Modifier // Baris krusial penangkal 67 error
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import coil.compose.AsyncImage
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -44,23 +35,36 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.filled.Notifications
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.prototypevolunteerapp.core.LocalBackStack
+import com.example.prototypevolunteerapp.core.Routes
 import com.example.prototypevolunteerapp.ui.components.AppFooter
-import com.example.prototypevolunteerapp.ui.components.ActivityRowCard
-import com.example.prototypevolunteerapp.ui.components.SubmissionStatusCard
-import com.example.prototypevolunteerapp.ui.components.SectionHeader
 import com.example.prototypevolunteerapp.data.preferences.SessionPreferences
 import kotlinx.coroutines.launch
 
-private val BgColor       = Color(0xFFF4F7EF)
-private val HeaderStart   = Color(0xFF3D5C2A)
-private val HeaderMid     = Color(0xFF5A7A5A)
-private val HeaderEnd     = Color(0xFF9EB589)
-private val CardWhite     = Color(0xFFFFFFFF)
-private val AccentGreen   = Color(0xFF5A7A5A)
-private val TextPrimary   = Color(0xFF1E2D1E)
-private val TextSecondary = Color(0xFF6E8F6E)
+// ── Colour tokens ─────────────────────────────────────────────────────────────
+private val BgColor        = Color(0xFFF5F7FF)
+private val HeaderBgTop    = Color(0xFF86B8FF)
+private val HeaderBgMiddle = Color(0xFF5B9BD5)
+private val HeaderBgBottom = Color(0xFFCBE2FF)
+private val CardPending    = Color(0xFF4A88FF)
+private val AddButtonColor = Color(0xFF2865FF)
+private val CardWhite      = Color(0xFFFFFFFF)
+private val TextPrimary    = Color(0xFF1A1A2E)
+private val TextSecondary  = Color(0xFF555577)
+private val hoverColor     = Color(0xFF0C3B65)
+
+private val StatusPendingText  = Color(0xFFB45309)
+private val StatusPendingBg    = Color(0xFFFEF3C7)
+private val StatusAcceptedText = Color(0xFF16A34A)
+private val StatusAcceptedBg   = Color(0xFFDCFCE7)
+private val StatusRejectedText = Color(0xFFDC2626)
+private val StatusRejectedBg    = Color(0xFFFEE2E2)
+
+// Token warna tambahan untuk status Selesai
+private val StatusCompletedText = Color(0xFF059669)
+private val StatusCompletedBg   = Color(0xFFD1FAE5)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,12 +76,8 @@ fun OrgDashboardScreen(
     val scope     = rememberCoroutineScope()
     val org       = viewModel.currentOrg
 
-    val uiState            by viewModel.uiState.collectAsState()
-    val existingActivities = uiState.existingActivities
-    val events        = uiState.events
-    val totalActivities    = uiState.totalActivities
-    val totalCandidates    = uiState.totalCandidates
-    val totalSubmissions   = uiState.totalSubmissions
+    val uiState         by viewModel.uiState.collectAsState()
+    val events          = uiState.events
 
     val statsSheetState   = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val snackbarHostState = remember { SnackbarHostState() }
@@ -86,46 +86,36 @@ fun OrgDashboardScreen(
         viewModel.loadData()
         viewModel.onSectionsVisible()
     }
+
     val sectionsVisible  = uiState.sectionsVisible
     val showLogoutDialog = uiState.showLogoutDialog
     val showStatsSheet   = uiState.showStatsSheet
-    val selectedTab = uiState.selectedTab
+    val selectedTab      = uiState.selectedTab
+
+    // ── Logout dialog ─────────────────────────────────────────────────────────
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.onLogoutDialogDismiss() },
-            shape = RoundedCornerShape(20.dp),
-            containerColor = CardWhite,
+            shape            = RoundedCornerShape(20.dp),
+            containerColor   = CardWhite,
             icon = {
                 Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .background(Color(0xFFFFEBEB), CircleShape),
+                    modifier         = Modifier.size(48.dp).background(Color(0xFFFFEBEB), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Default.Logout,
-                        null,
-                        tint = Color(0xFFD32F2F),
-                        modifier = Modifier.size(24.dp)
-                    )
+                    Icon(Icons.Default.Logout, null,
+                        tint     = Color(0xFFD32F2F),
+                        modifier = Modifier.size(24.dp))
                 }
             },
             title = {
-                Text(
-                    "Keluar dari Akun?",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = TextPrimary,
-                    textAlign = TextAlign.Center
-                )
+                Text("Keluar dari Akun?",
+                    fontWeight = FontWeight.Bold, fontSize = 16.sp,
+                    color = TextPrimary, textAlign = TextAlign.Center)
             },
             text = {
-                Text(
-                    "Yakin ingin keluar dari akun organisasi ini?",
-                    fontSize = 13.sp,
-                    color = TextSecondary,
-                    textAlign = TextAlign.Center
-                )
+                Text("Yakin ingin keluar dari akun organisasi ini?",
+                    fontSize = 13.sp, color = TextSecondary, textAlign = TextAlign.Center)
             },
             confirmButton = {
                 Button(
@@ -134,151 +124,145 @@ fun OrgDashboardScreen(
                             SessionPreferences(context).clearSession()
                             viewModel.logout()
                             viewModel.onLogoutDialogDismiss()
-                            while (backStack.isNotEmpty()) {
-                                backStack.removeLastOrNull()
-                            }
+                            while (backStack.isNotEmpty()) backStack.removeLastOrNull()
                             backStack.add(Routes.WelcomeRoute)
                         }
                     },
-                    shape = RoundedCornerShape(12.dp),
+                    shape  = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
                 ) { Text("Ya, Keluar", fontSize = 13.sp) }
             },
             dismissButton = {
                 OutlinedButton(
                     onClick = { viewModel.onLogoutDialogDismiss() },
-                    shape = RoundedCornerShape(12.dp)
+                    shape   = RoundedCornerShape(12.dp)
                 ) { Text("Batal", fontSize = 13.sp) }
             }
         )
     }
 
+    // ── Stats bottom sheet — bar chart total pendaftar per kegiatan ───────────
     if (showStatsSheet) {
-        val totalPending  = viewModel.pendingCount()
-        val totalAccepted = viewModel.acceptedCount()
-        val totalRejected = viewModel.rejectedCount()
+        val totalAll      = events.sumOf { it.registered_count ?: 0 }
+        val maxCount      = events.maxOfOrNull { it.registered_count ?: 0 }.let { if ((it ?: 0) < 1) 1 else it!! }
+            .let { if ((it ?: 0) < 1) 1 else it!! }
+
+        // Trigger animasi bar setelah sheet terbuka
+        var barsVisible by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) { barsVisible = true }
+
         ModalBottomSheet(
             onDismissRequest = {
                 viewModel.onStatsSheetDismiss()
                 viewModel.onTabSelected(OrgTab.DASHBOARD)
             },
-            sheetState = statsSheetState,
+            sheetState     = statsSheetState,
             containerColor = CardWhite,
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-            dragHandle = {
-                Box(
-                    modifier = Modifier
-                        .padding(top = 12.dp, bottom = 4.dp)
-                        .width(36.dp)
-                        .height(4.dp)
-                        .background(Color(0xFFDAEFDC), RoundedCornerShape(50))
-                )
-            }
+            shape          = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
                     .padding(bottom = 40.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(Modifier.height(4.dp))
 
+                // Header
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier = Modifier
+                        modifier         = Modifier
                             .size(36.dp)
-                            .background(Color(0xFFDAEFDC), CircleShape),
+                            .background(Color(0xFFEAF2FF), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            Icons.Default.BarChart,
-                            null,
-                            tint = AccentGreen,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        Icon(Icons.Default.BarChart, null,
+                            tint     = AddButtonColor,
+                            modifier = Modifier.size(18.dp))
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(Modifier.width(10.dp))
                     Column {
-                        Text(
-                            "Statistik Kandidat",
+                        Text("Statistik Pendaftar",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = TextPrimary
-                        )
-                        Text(
-                            "${uiState.totalCandidates} total kandidat terdaftar",
-                            fontSize = 12.sp,
-                            color = TextSecondary
-                        )
+                            fontSize   = 16.sp,
+                            color      = TextPrimary)
+                        Text("$totalAll total pendaftar di semua kegiatan",
+                            fontSize = 12.sp, color = TextSecondary)
                     }
                 }
 
-                HorizontalDivider(color = Color(0xFFDAEFDC), thickness = 1.dp)
-                StatDetailRow(
-                    label = "Menunggu Keputusan",
-                    count = totalPending,
-                    textColor = Color(0xFF7A5C00),
-                    bgColor = Color(0xFFFFF8E1),
-                    icon = Icons.Default.HourglassEmpty
-                )
-                StatDetailRow(
-                    label = "Diterima",
-                    count = totalAccepted,
-                    textColor = Color(0xFF2E5C1A),
-                    bgColor = Color(0xFFD4EDCA),
-                    icon = Icons.Default.CheckCircle
-                )
-                StatDetailRow(
-                    label = "Ditolak",
-                    count = totalRejected,
-                    textColor = Color(0xFFB71C1C),
-                    bgColor = Color(0xFFFFEBEE),
-                    icon = Icons.Default.Cancel
-                )
-
-                HorizontalDivider(color = Color(0xFFDAEFDC), thickness = 1.dp)
-
-                Text(
-                    "Kandidat Setiap Kegiatan",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 13.sp,
-                    color = TextPrimary
-                )
-
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.heightIn(max = 280.dp)
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment     = Alignment.CenterVertically
                 ) {
-                    items(items = existingActivities, key = { "stat_${it.title}" }) { activity ->
-                        val count = viewModel.candidateCountFor(activity.title)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFFF4F7EF), RoundedCornerShape(10.dp))
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = activity.title,
-                                fontSize = 12.sp,
-                                color = TextPrimary,
-                                modifier = Modifier.weight(1f),
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Box(
-                                modifier = Modifier
-                                    .background(Color(0xFFDAEFDC), RoundedCornerShape(20.dp))
-                                    .padding(horizontal = 10.dp, vertical = 3.dp)
+                    Text("Total Pendaftar per Kegiatan",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize   = 13.sp,
+                        color      = TextPrimary)
+                }
+
+                // ── Horizontal bar chart ──────────────────────────────────────
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier            = Modifier.heightIn(max = 340.dp)
+                ) {
+                    items(items = events, key = { "stat_${it.id}" }) { event ->
+                        val count = event.registered_count ?: 0
+                        val ratio = count.toFloat() / maxCount.toFloat()
+
+                        // Animasi fill bar
+                        val animatedRatio by animateFloatAsState(
+                            targetValue    = if (barsVisible) ratio else 0f,
+                            animationSpec  = tween(durationMillis = 600),
+                            label          = "bar_${event.id}"
+                        )
+
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            // Label baris: judul + angka
+                            Row(
+                                modifier              = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 5.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment     = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    "$count kandidat",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = AccentGreen
+                                    text     = event.title,
+                                    fontSize = 12.sp,
+                                    color    = TextPrimary,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(end = 8.dp),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text       = "$count pendaftar",
+                                    fontSize   = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color      = AddButtonColor
+                                )
+                            }
+
+                            // Track + fill
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(10.dp)
+                                    .background(Color(0xFFEAF2FF), RoundedCornerShape(50.dp))
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(fraction = animatedRatio.coerceIn(0f, 1f))
+                                        .height(10.dp)
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                listOf(Color(0xFF3B82F6), AddButtonColor)
+                                            ),
+                                            RoundedCornerShape(50.dp)
+                                        )
                                 )
                             }
                         }
@@ -287,9 +271,10 @@ fun OrgDashboardScreen(
             }
         }
     }
-    val cancelTargetId  by viewModel.cancelTargetId.collectAsState()
-    val cancelSuccess   by viewModel.cancelSuccess.collectAsState()
 
+    // ── Cancel event dialog ───────────────────────────────────────────────────
+    val cancelTargetId by viewModel.cancelTargetId.collectAsState()
+    val cancelSuccess  by viewModel.cancelSuccess.collectAsState()
     LaunchedEffect(cancelSuccess) {
         cancelSuccess?.let {
             snackbarHostState.showSnackbar(it)
@@ -305,7 +290,7 @@ fun OrgDashboardScreen(
             title   = { Text("Batalkan Kegiatan?", fontWeight = FontWeight.Bold) },
             text    = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Semua peserta yang terdaftar akan menerima notifikasi pembatalan.",
+                    Text("Semua peserta akan menerima notifikasi pembatalan.",
                         fontSize = 13.sp, color = Color(0xFF555555))
                     OutlinedTextField(
                         value         = reasonText,
@@ -330,327 +315,330 @@ fun OrgDashboardScreen(
         )
     }
 
+    // ── Scaffold ──────────────────────────────────────────────────────────────
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            "Dashboard",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            color = TextPrimary
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { backStack.removeLastOrNull() }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = TextPrimary
-                        )
-                    }
-                },
-                actions = {
-                    val unreadCount by remember {
-                        derivedStateOf { uiState.unreadNotifCount }
-                    }
-                    Box {
-                        IconButton(
-                            onClick = {
-                                viewModel.onNotificationsOpened()
-                                backStack.add(Routes.NotificationsRoute)
-                            }
-                        ) {
-                            Icon(
-                                Icons.Default.Notifications,
-                                contentDescription = "Notifikasi",
-                                tint               = Color(0xFF3D5C2A)
-                            )
-                        }
-                        if (unreadCount > 0) {
-                            Box(
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .background(Color(0xFFD32F2F), CircleShape)
-                                    .align(Alignment.TopEnd)
-                                    .offset(x = (-2).dp, y = 2.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text     = if (unreadCount > 99) "99+" else unreadCount.toString(),
-                                    fontSize = 9.sp,
-                                    color    = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    lineHeight = 10.sp
-                                )
-                            }
-                        }
-                    }
-
-                    IconButton(onClick = { viewModel.onLogoutDialogShow() }) {
-                        Icon(
-                            Icons.Default.Logout,
-                            contentDescription = "Logout",
-                            tint               = Color(0xFFD32F2F)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BgColor)
-            )
-        },
-
-        bottomBar = {
+        topBar       = {},
+        bottomBar    = {
             OrgBottomBar(
-                selected = selectedTab,
-                isEnabled  = true,
-                onSelect = { tab ->
+                selected  = selectedTab,
+                isEnabled = true,
+                onSelect  = { tab ->
                     when (tab) {
-                        OrgTab.TAMBAH -> backStack.add(Routes.AddActivityRoute)
-                        OrgTab.KANDIDAT   -> {
-                            val firstActivity = existingActivities.firstOrNull()
-                            if (firstActivity != null) {
-                                backStack.add(Routes.CandidateListRoute(eventId = firstActivity.id.toIntOrNull()))
-                            } else {
-                                scope.launch {
-                                    snackbarHostState.showSnackbar("Belum ada kegiatan tersedia")
-                                }
-                            }
+                        OrgTab.TAMBAH    -> backStack.add(Routes.AddActivityRoute)
+                        OrgTab.KANDIDAT  -> {
+                            val first = events.firstOrNull()
+                            if (first != null) backStack.add(Routes.CandidateListRoute(eventId = first.id))
+                            else scope.launch { snackbarHostState.showSnackbar("Belum ada kegiatan tersedia") }
                         }
-                        OrgTab.STATISTIK -> {
-                            viewModel.onTabSelected(tab)
-                            viewModel.onStatsSheetShow()
-                        }
-                        OrgTab.PROFIL  -> backStack.add(Routes.OrgProfileRoute)
+                        OrgTab.STATISTIK -> { viewModel.onTabSelected(tab); viewModel.onStatsSheetShow() }
+                        OrgTab.PROFIL    -> backStack.add(Routes.OrgProfileRoute)
                         OrgTab.DASHBOARD -> viewModel.onTabSelected(tab)
                     }
                 }
             )
         },
-        containerColor = BgColor
+        containerColor = Color.Transparent
     ) { innerPadding ->
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            verticalArrangement = Arrangement.spacedBy(0.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            BgColor, HeaderBgBottom, HeaderBgTop,
+                            HeaderBgMiddle, HeaderBgBottom, BgColor
+                        )
+                    )
+                )
         ) {
-            item(key = "verification_banner") {
-                val verStatus = uiState.events.firstOrNull()?.organization?.verification_status
-                if (verStatus != null && verStatus != "verified") {
-                    val (bannerColor, bannerBg, bannerIcon, bannerText) = when (verStatus) {
-                        "rejected" -> listOf(
-                            Color(0xFFB71C1C), Color(0xFFFFEBEE),
-                            Icons.Default.Cancel,
-                            "Akun organisasimu ditolak admin. Edit profil dan ajukan ulang."
-                        )
-                        else -> listOf(
-                            Color(0xFF7A5C00), Color(0xFFFFF8E1),
-                            Icons.Default.HourglassEmpty,
-                            "Akun organisasimu sedang menunggu verifikasi admin. Beberapa fitur dibatasi."
-                        )
-                    }
-                    @Suppress("UNCHECKED_CAST")
-                    val color  = bannerColor  as Color
-                    val bg     = bannerBg     as Color
-                    val icon   = bannerIcon   as androidx.compose.ui.graphics.vector.ImageVector
-                    val text   = bannerText   as String
+            LazyColumn(
+                modifier            = Modifier.fillMaxSize().padding(innerPadding),
+                verticalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
 
+                // ── Header welcome ────────────────────────────────────────────
+                item(key = "top_header") {
+                    Box(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 20.dp)) {
+                        Row(
+                            modifier              = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment     = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text("Welcome,",
+                                    color    = TextPrimary.copy(alpha = 0.85f),
+                                    fontSize = 13.sp)
+                                Text(org?.name ?: "Organisasi",
+                                    color      = TextPrimary,
+                                    fontSize   = 20.sp,
+                                    fontWeight = FontWeight.Bold)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                val unreadCount by remember { derivedStateOf { uiState.unreadNotifCount } }
+                                Box {
+                                    IconButton(onClick = {
+                                        viewModel.onNotificationsOpened()
+                                        backStack.add(Routes.NotificationsRoute)
+                                    }) {
+                                        Icon(Icons.Default.Notifications, "Notifikasi",
+                                            tint     = TextPrimary,
+                                            modifier = Modifier.size(28.dp))
+                                    }
+                                    if (unreadCount > 0) {
+                                        Badge(
+                                            modifier       = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .offset(x = (-4).dp, y = 4.dp),
+                                            containerColor = MaterialTheme.colorScheme.error
+                                        ) {
+                                            Text(
+                                                if (unreadCount > 99) "99+" else unreadCount.toString(),
+                                                fontSize = 9.sp)
+                                        }
+                                    }
+                                }
+                                Spacer(Modifier.width(4.dp))
+                                IconButton(onClick = { viewModel.onLogoutDialogShow() }) {
+                                    Icon(Icons.Default.Logout, "Logout",
+                                        tint     = TextPrimary,
+                                        modifier = Modifier.size(28.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ── Single stat card: Activity Pending ────────────────────────
+                item(key = "stat_cards") {
+                    val pendingCount = viewModel.pendingCount()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 20.dp)
+                    ) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.onEventStatusSelected("pending_review") },
+                            shape  = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = CardPending)
+                        ) {
+                            Column(
+                                modifier            = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 24.dp, horizontal = 20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Box(
+                                    modifier         = Modifier
+                                        .size(52.dp)
+                                        .background(Color.White.copy(alpha = 0.15f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Warning, null,
+                                        tint     = Color.White,
+                                        modifier = Modifier.size(26.dp))
+                                }
+                                Text("$pendingCount",
+                                    fontSize   = 40.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color      = Color.White,
+                                    textAlign  = TextAlign.Center)
+                                Text("Activity Pending",
+                                    fontSize  = 14.sp,
+                                    color     = Color.White,
+                                    fontWeight = FontWeight.SemiBold,
+                                    textAlign = TextAlign.Center)
+                                Text("Menunggu persetujuan admin",
+                                    fontSize  = 11.sp,
+                                    color     = Color.White.copy(0.75f),
+                                    textAlign = TextAlign.Center)
+                            }
+                        }
+                    }
+                }
+
+                // ── Section header kegiatan ───────────────────────────────────
+                item(key = "activities_section_header") {
+                    Spacer(Modifier.height(8.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(bg)
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment     = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(icon, null, tint = color, modifier = Modifier.size(18.dp))
-                        Text(text, fontSize = 12.sp, color = color, lineHeight = 16.sp, modifier = Modifier.weight(1f))
+                        Text("Kegiatan yang didaftarkan",
+                            fontSize   = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color      = TextPrimary)
+                        Spacer(Modifier.weight(1f))
                     }
                 }
-            }
-            item(key="header") {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Brush.linearGradient(listOf(HeaderStart, HeaderMid, HeaderEnd))
+
+                // ── Status filter chips ───────────────────────────────────────
+                item(key = "event_status_filter") {
+                    val statusFilter by remember { derivedStateOf { uiState.selectedEventStatus } }
+                    val statusOptions = listOf(
+                        null             to "Semua",
+                        "published"      to "Aktif",
+                        "pending_review" to "Pending",
+                        "completed"      to "Selesai", // Hanya ditambahkan ke list pilihan
+                        "draft"          to "Draft",
+                        "cancelled"      to "Dibatalkan"
+                    )
+                    ScrollableRow_StatusChips(
+                        options  = statusOptions,
+                        selected = statusFilter,
+                        onSelect = { viewModel.onEventStatusSelected(it) }
+                    )
+                }
+
+                // ── Event cards ───────────────────────────────────────────────
+                items(items = uiState.filteredEvents, key = { "event_${it.id}" }) { event ->
+                    val candidateCount = viewModel.candidateCountFor(event.id)
+                    AnimatedVisibility(
+                        visible = sectionsVisible,
+                        enter   = fadeIn() + slideInVertically(
+                            animationSpec  = spring(stiffness = Spring.StiffnessMediumLow),
+                            initialOffsetY = { it / 3 }
                         )
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(180.dp)
-                            .offset(x = 220.dp, y = (-40).dp)
-                            .background(Color.White.copy(alpha = 0.04f), CircleShape)
-                            .align(Alignment.TopStart)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .offset(x = 260.dp, y = 30.dp)
-                            .background(Color.White.copy(alpha = 0.03f), CircleShape)
-                            .align(Alignment.TopStart)
-                    )
-                    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.White.copy(0.15f), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (!org?.logoUrl.isNullOrBlank()) {
-                                    AsyncImage(
-                                        model              = org!!.logoUrl,
-                                        contentDescription = "Logo organisasi",
-                                        contentScale       = ContentScale.Crop,
-                                        modifier           = Modifier
-                                            .fillMaxSize()
-                                            .clip(CircleShape)
-                                    )
-                                } else {
-                                    Text(
-                                        text       = (org?.name?.firstOrNull() ?: "O").toString().uppercase(),
-                                        color      = Color.White,
-                                        fontSize   = 22.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                    ) {
+                        Card(
+                            modifier  = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp)
+                                .clickable { backStack.add(Routes.CandidateListRoute(eventId = event.id)) },
+                            shape     = RoundedCornerShape(16.dp),
+                            colors    = CardDefaults.cardColors(containerColor = CardWhite),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                        ) {
+                            Row(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
+                                Box(
+                                    modifier         = Modifier
+                                        .size(72.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(
+                                            Brush.linearGradient(
+                                                listOf(HeaderBgBottom.copy(alpha = 0.7f), AddButtonColor)
+                                            )
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Event, null,
+                                        tint     = Color.White,
+                                        modifier = Modifier.size(32.dp))
                                 }
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    org?.name ?: "Organisasi",
-                                    color = Color.White,
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    org?.email ?: "",
-                                    color = Color.White.copy(0.5f),
-                                    fontSize = 11.sp
-                                )
-                            }
-
-                            val verificationStatus = uiState.events.firstOrNull()?.organization?.verification_status
-                            if (verificationStatus != null) {
-                                val badgeBg    = when (verificationStatus) { "verified" -> Color(0xFFE8F5E9); "rejected" -> Color(0xFFFFEBEE); else -> Color(0xFFFFF8E1) }
-                                val badgeColor = when (verificationStatus) { "verified" -> Color(0xFF2E7D32); "rejected" -> Color(0xFFB71C1C);  else -> Color(0xFFE65100)  }
-                                val badgeIcon  = when (verificationStatus) { "verified" -> Icons.Default.Verified; "rejected" -> Icons.Default.Cancel; else -> Icons.Default.HourglassEmpty }
-                                val badgeLabel = when (verificationStatus) { "verified" -> "Terverifikasi"; "rejected" -> "Ditolak"; else -> "Menunggu Verifikasi" }
-
-                                Spacer(Modifier.width(8.dp))
-                                Surface(shape = RoundedCornerShape(20.dp), color = badgeBg.copy(alpha = 0.9f)) {
-                                    Row(
-                                        modifier              = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        verticalAlignment     = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                Spacer(Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    val (badgeColor, badgeBg, badgeText) = when (event.status) {
+                                        "published"      -> Triple(StatusAcceptedText, StatusAcceptedBg, "Aktif")
+                                        "pending_review" -> Triple(StatusPendingText,  StatusPendingBg,  "Pending")
+                                        "cancelled"      -> Triple(StatusRejectedText, StatusRejectedBg, "Dibatalkan")
+                                        "draft"          -> Triple(Color(0xFF37474F),  Color(0xFFECEFF1), "Draft")
+                                        "completed"      -> Triple(StatusCompletedText, StatusCompletedBg, "Selesai") // Hanya disisipkan di sini
+                                        else             -> Triple(TextSecondary, Color(0xFFF0F0F0), event.status ?: "")
+                                    }
+                                    Surface(shape = RoundedCornerShape(20.dp), color = badgeBg) {
+                                        Text(badgeText, fontSize = 9.sp, color = badgeColor,
+                                            fontWeight = FontWeight.SemiBold,
+                                            modifier   = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
+                                    }
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(event.title,
+                                        fontSize   = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color      = TextPrimary,
+                                        maxLines   = 2,
+                                        overflow   = TextOverflow.Ellipsis)
+                                    Spacer(Modifier.height(4.dp))
+                                    val locationStr = buildString {
+                                        if (!event.location_name.isNullOrBlank()) append(event.location_name)
+                                        if (!event.city.isNullOrBlank()) {
+                                            if (isNotEmpty()) append(", "); append(event.city)
+                                        }
+                                    }
+                                    if (locationStr.isNotBlank()) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.LocationOn, null,
+                                                tint     = TextSecondary,
+                                                modifier = Modifier.size(11.dp))
+                                            Spacer(Modifier.width(2.dp))
+                                            Text(locationStr, fontSize = 10.sp, color = TextSecondary,
+                                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
+                                        Spacer(Modifier.height(2.dp))
+                                    }
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.People, null,
+                                            tint     = Color(0xFF3B82F6),
+                                            modifier = Modifier.size(11.dp))
+                                        Spacer(Modifier.width(2.dp))
+                                        Text("$candidateCount pendaftar",
+                                            fontSize   = 10.sp,
+                                            color      = Color(0xFF3B82F6),
+                                            fontWeight = FontWeight.Medium)
+                                    }
+                                }
+                                Column(
+                                    horizontalAlignment = Alignment.End,
+                                    verticalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    IconButton(
+                                        onClick  = { backStack.add(Routes.EditActivityRoute(eventId = event.id)) },
+                                        modifier = Modifier.size(28.dp)
                                     ) {
-                                        Icon(badgeIcon, null, tint = badgeColor, modifier = Modifier.size(12.dp))
-                                        Text(badgeLabel, fontSize = 10.sp, color = badgeColor, fontWeight = FontWeight.SemiBold)
+                                        Icon(Icons.Default.Edit, null,
+                                            tint     = TextSecondary,
+                                            modifier = Modifier.size(16.dp))
+                                    }
+
+                                    // Selesai Skenario: Tombol Selesaikan Event (Icons.Default.Done) jika status aktif
+                                    if (event.status == "published") {
+                                        Spacer(Modifier.height(4.dp))
+                                        IconButton(
+                                            onClick  = { viewModel.onCompleteEvent(event.id) },
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Icon(Icons.Default.Done, null,
+                                                tint     = StatusCompletedText,
+                                                modifier = Modifier.size(18.dp))
+                                        }
+                                    }
+
+                                    if (event.status !in listOf("cancelled", "completed")) {
+                                        Spacer(Modifier.height(4.dp))
+                                        IconButton(
+                                            onClick  = { viewModel.onCancelEventRequest(event.id) },
+                                            modifier = Modifier.size(28.dp)
+                                        ) {
+                                            Icon(Icons.Default.Cancel, null,
+                                                tint     = Color(0xFFCC2222),
+                                                modifier = Modifier.size(16.dp))
+                                        }
                                     }
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            StatCard(
-                                label = "Kegiatan",
-                                value = "$totalActivities",
-                                icon = Icons.Default.Event,
-                                modifier = Modifier.weight(1f)
-                            )
-                            StatCard(
-                                label = "Kandidat",
-                                value = "$totalCandidates",
-                                icon = Icons.Default.People,
-                                modifier = Modifier.weight(1f)
-                            )
-                            StatCard(
-                                label = "Pengajuan",
-                                value = "$totalSubmissions",
-                                icon = Icons.Default.Assignment,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
                     }
                 }
-            }
-            item(key = "activities_header") {
-                AnimatedVisibility(
-                    visible = sectionsVisible,
-                    enter = fadeIn() + slideInVertically(
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                        initialOffsetY = { it / 4 }
-                    )
-                ) {
-                    SectionHeader(
-                        title = "Daftar Kegiatan",
-                        subtitle = "Pilih untuk melihat kandidat",
-                        icon = Icons.Default.Event
-                    )
-                }
-            }
 
-            item(key = "event_status_filter") {
-                val statusFilter by remember { derivedStateOf { uiState.selectedEventStatus } }
-                val statusOptions = listOf(
-                    null             to "Semua",
-                    "published"      to "Aktif",
-                    "pending_review" to "Pending",
-                    "draft"          to "Draft",
-                    "cancelled"      to "Dibatalkan"
-                )
-                ScrollableRow_StatusChips(
-                    options  = statusOptions,
-                    selected = statusFilter,
-                    onSelect = { viewModel.onEventStatusSelected(it) }
-                )
+                item(key = "bottom_spacer") { Spacer(Modifier.height(16.dp)) }
+                item(key = "footer") { AppFooter() }
             }
-
-            items(
-                items = uiState.filteredEvents,
-                key   = { "event_${it.id}" }
-            ) { event ->
-                val candidateCount = viewModel.candidateCountFor(event.id)
-                AnimatedVisibility(
-                    visible = sectionsVisible,
-                    enter = fadeIn() + slideInVertically(
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                        initialOffsetY = {it/3}
-                    )
-                ) {
-                    ActivityRowCard(
-                        title = event.title,
-                        location = buildString {
-                            if (!event.location_name.isNullOrBlank()) append(event.location_name)
-                            if (!event.city.isNullOrBlank()) { if (isNotEmpty()) append(", "); append(event.city) }
-                        },
-                        candidateCount = candidateCount,
-                        onClick = {
-                            backStack.add(Routes.CandidateListRoute(eventId = event.id))
-                        },
-                        onEdit = {
-                            backStack.add(Routes.EditActivityRoute(eventId = event.id))
-                        },
-                        onCancel = if (event.status !in listOf("cancelled", "completed")) {
-                            { viewModel.onCancelEventRequest(event.id) }
-                        } else null
-                    )
-                }
-            }
-            item(key = "bottom_spacer") { Spacer(modifier = Modifier.height(16.dp)) }
-            item(key = "footer") { AppFooter() }
         }
     }
+}
+
+// ── Helper composables ────────────────────────────────────────────────────────
+
+@Composable
+private fun MiniLabel(text: String, color: Color) {
+    Text(text, fontSize = 10.sp, color = color, fontWeight = FontWeight.Medium)
 }
 
 @Composable
@@ -659,7 +647,6 @@ private fun ScrollableRow_StatusChips(
     selected: String?,
     onSelect: (String?) -> Unit
 ) {
-    val AccentGreen = Color(0xFF3D5C2A)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -670,93 +657,69 @@ private fun ScrollableRow_StatusChips(
         options.forEach { (value, label) ->
             val isSelected = selected == value
             Surface(
-                shape  = RoundedCornerShape(20.dp),
-                color  = if (isSelected) AccentGreen else Color(0xFFF0F0F0),
+                shape    = RoundedCornerShape(20.dp),
+                color    = if (isSelected) hoverColor else Color(0xFFF0F0F0),
                 modifier = Modifier.clickable { onSelect(value) }
             ) {
                 Text(
-                    text     = label,
-                    fontSize = 12.sp,
-                    color    = if (isSelected) Color.White else Color(0xFF444444),
+                    text       = label,
+                    fontSize   = 12.sp,
+                    color      = if (isSelected) Color.White else Color(0xFF444444),
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                    modifier   = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
                 )
             }
         }
     }
 }
+
 @Composable
 private fun OrgBottomBar(
-    selected: OrgTab,
-    onSelect: (OrgTab) -> Unit,
+    selected:  OrgTab,
+    onSelect:  (OrgTab) -> Unit,
     isEnabled: Boolean = true
 ) {
     Surface(
-        modifier = Modifier
+        modifier       = Modifier
             .fillMaxWidth()
             .shadow(
                 elevation = 12.dp,
-                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-                clip = false
+                shape     = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+                clip      = false
             ),
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-        color = CardWhite,
+        shape          = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        color          = CardWhite,
         tonalElevation = 0.dp
     ) {
         Row(
-            modifier = Modifier
+            modifier              = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .height(64.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment     = Alignment.CenterVertically
         ) {
-            OrgNavItem(
-                tab = OrgTab.DASHBOARD,
-                icon = Icons.Default.Home,
-                label = "Dashboard",
-                selected = selected,
-                onSelect = onSelect
-            )
-            OrgNavItem(
-                tab = OrgTab.KANDIDAT,
-                icon = Icons.Default.Person,
-                label = "Kandidat",
-                selected = selected,
-                onSelect = onSelect
-            )
+            OrgNavItem(OrgTab.DASHBOARD, Icons.Default.Home,         "Home",     selected, onSelect)
+            OrgNavItem(OrgTab.KANDIDAT,  Icons.Default.Person,       "Kandidat", selected, onSelect)
             OrgAddButton(onClick = { onSelect(OrgTab.TAMBAH) }, isEnabled = isEnabled)
-            OrgNavItem(
-                tab = OrgTab.STATISTIK,
-                icon = Icons.Default.BarChart,
-                label = "Statistik",
-                selected = selected,
-                onSelect = onSelect
-            )
-            OrgNavItem(
-                tab = OrgTab.PROFIL,
-                icon = Icons.Default.AccountCircle,
-                label = "Profil",
-                selected = selected,
-                onSelect = onSelect
-            )
+            OrgNavItem(OrgTab.STATISTIK, Icons.Default.BarChart,     "Statistik",selected, onSelect)
+            OrgNavItem(OrgTab.PROFIL,    Icons.Default.AccountCircle,"Profile",  selected, onSelect)
         }
     }
 }
 
 @Composable
 private fun OrgNavItem(
-    tab: OrgTab,
-    icon: ImageVector,
-    label: String,
+    tab:      OrgTab,
+    icon:     ImageVector,
+    label:    String,
     selected: OrgTab,
     onSelect: (OrgTab) -> Unit
 ) {
     val isSelected = selected == tab
-    val tint = if (isSelected) AccentGreen else TextSecondary
-
+    val tint       = if (isSelected) hoverColor else TextSecondary
     Column(
-        modifier = Modifier
+        modifier            = Modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable { onSelect(tab) }
             .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -764,42 +727,34 @@ private fun OrgNavItem(
         verticalArrangement = Arrangement.Center
     ) {
         if (isSelected) {
-            Box(
-                modifier = Modifier
-                    .width(20.dp)
-                    .height(3.dp)
-                    .background(AccentGreen, RoundedCornerShape(50))
-            )
-            Spacer(modifier = Modifier.height(4.dp))
+            Box(modifier = Modifier
+                .width(20.dp).height(3.dp)
+                .background(HeaderBgBottom, RoundedCornerShape(50)))
+            Spacer(Modifier.height(4.dp))
         } else {
-            Spacer(modifier = Modifier.height(7.dp))
+            Spacer(Modifier.height(7.dp))
         }
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = tint,
-            modifier = Modifier.size(22.dp)
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = label,
-            fontSize = 10.sp,
-            color = tint,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
-        )
+        Icon(icon, label, tint = tint, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.height(2.dp))
+        Text(label,
+            fontSize   = 10.sp,
+            color      = tint,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal)
     }
 }
-
 
 @Composable
 private fun OrgAddButton(onClick: () -> Unit, isEnabled: Boolean = true) {
     Box(
-        modifier = Modifier
+        modifier         = Modifier
             .size(52.dp)
-            .shadow(elevation = if (isEnabled) 6.dp else 0.dp, shape = CircleShape)
+            .shadow(
+                elevation = if (isEnabled) 6.dp else 0.dp,
+                shape     = CircleShape
+            )
             .background(
                 if (isEnabled)
-                    Brush.linearGradient(listOf(HeaderStart, HeaderMid))
+                    Brush.linearGradient(listOf(hoverColor, Color(0xFF82B8E8)))
                 else
                     Brush.linearGradient(listOf(Color(0xFFB0B0B0), Color(0xFFC0C0C0))),
                 CircleShape
@@ -808,53 +763,8 @@ private fun OrgAddButton(onClick: () -> Unit, isEnabled: Boolean = true) {
             .clickable(enabled = isEnabled) { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector        = Icons.Default.Add,
-            contentDescription = "Tambah Kegiatan",
-            tint               = Color.White,
-            modifier           = Modifier.size(26.dp)
-        )
-    }
-}
-
-@Composable
-private fun StatCard(label: String, value: String, icon: ImageVector, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(14.dp))
-            .padding(vertical = 12.dp, horizontal = 10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(icon, null, tint = Color.White.copy(0.7f), modifier = Modifier.size(16.dp))
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(value, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
-        Text(label, color = Color.White.copy(0.65f), fontSize = 10.sp, textAlign = TextAlign.Center)
-    }
-}
-
-@Composable
-private fun StatDetailRow(
-    label    : String,
-    count    : Int,
-    textColor: Color,
-    bgColor  : Color,
-    icon     : ImageVector
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(bgColor, RoundedCornerShape(12.dp))
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment     = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(icon, null, tint = textColor, modifier = Modifier.size(18.dp))
-            Text(label, fontSize = 13.sp, color = textColor, fontWeight = FontWeight.Medium)
-        }
-        Text("$count", fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = textColor)
+        Icon(Icons.Default.Add, "Tambah Kegiatan",
+            tint     = Color.White,
+            modifier = Modifier.size(26.dp))
     }
 }

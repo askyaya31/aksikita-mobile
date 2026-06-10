@@ -72,6 +72,7 @@ class EditActivityViewModel @Inject constructor(
 
     private val _formState = MutableStateFlow(EditActivityFormState())
     val formState: StateFlow<EditActivityFormState> = _formState.asStateFlow()
+
     fun loadEvent(eventId: Int) {
         if (eventId == -1) { _formState.update { it.copy(notFound = true) }; return }
         viewModelScope.launch {
@@ -112,6 +113,7 @@ class EditActivityViewModel @Inject constructor(
     }
 
     fun onNamaKegiatanChange(v: String)   { _formState.update { it.copy(namaKegiatan = v,   namaError = false) } }
+    fun onLocationsChange(v: String)      { _formState.update { it.copy(lokasi = v,         lokasiError = false) } } // Keep map if needed, generic below
     fun onLokasiChange(v: String)         { _formState.update { it.copy(lokasi = v,         lokasiError = false) } }
     fun onKotaChange(v: String)           { _formState.update { it.copy(kota = v,           kotaError = false) } }
     fun onTanggalMulaiChange(v: String)   { _formState.update { it.copy(tanggalMulai = v,   tanggalMulaiError = false) } }
@@ -148,6 +150,7 @@ class EditActivityViewModel @Inject constructor(
     }
 
     fun onPreviewDismissed() { _formState.update { it.copy(showPreviewSheet = false) } }
+
     fun onSaveConfirmed() {
         val s = _formState.value
         viewModelScope.launch {
@@ -203,6 +206,7 @@ class EditActivityViewModel @Inject constructor(
     }
 
     fun onPosterSelected(uri: Uri?) { _formState.update { it.copy(posterUri = uri) } }
+
     private fun uriToMultipartPart(uri: Uri, fieldName: String): MultipartBody.Part? {
         return try {
             val inputStream = context.contentResolver.openInputStream(uri) ?: return null
@@ -227,6 +231,7 @@ class EditActivityViewModel @Inject constructor(
         val base = AppConfig.BASE_URL.trimEnd('/')
         return "$base/storage/$path"
     }
+
     fun onSubmitToReviewConfirmed() {
         val eventId = _formState.value.eventId
         viewModelScope.launch {
@@ -246,6 +251,7 @@ class EditActivityViewModel @Inject constructor(
             }
         }
     }
+
     fun onDeleteConfirmed(onSuccess: () -> Unit) {
         val eventId = _formState.value.eventId
         viewModelScope.launch {
@@ -257,6 +263,52 @@ class EditActivityViewModel @Inject constructor(
             }
         }
     }
+
+    // ── Fungsi Aksi Tambahan untuk Mengubah Status Event ──────────────────────
+
+    fun onCompleteEvent() {
+        val eventId = _formState.value.eventId
+        if (eventId == -1) return
+        viewModelScope.launch {
+            try {
+                val resp = apiService.completeOrgEvent(eventId)
+                if (resp.isSuccessful) {
+                    _formState.update { it.copy(
+                        statusFromApi  = "completed",
+                        isReadOnly     = true, // Mengunci form karena event telah selesai
+                        successMessage = "Kegiatan telah selesai dilaksanakan."
+                    )}
+                } else {
+                    _formState.update { it.copy(errorMessage = "Gagal menyelesaikan kegiatan (${resp.code()})") }
+                }
+            } catch (e: Exception) {
+                _formState.update { it.copy(errorMessage = "Koneksi gagal: ${e.localizedMessage}") }
+            }
+        }
+    }
+
+    fun onCancelEvent() {
+        val eventId = _formState.value.eventId
+        if (eventId == -1) return
+        viewModelScope.launch {
+            try {
+                // Mengirimkan bodi kosong seperti di Dashboard jika tidak memakai dialog alasan terpisah
+                val resp = apiService.cancelOrgEvent(eventId, emptyMap())
+                if (resp.isSuccessful) {
+                    _formState.update { it.copy(
+                        statusFromApi  = "cancelled",
+                        isReadOnly     = true, // Mengunci form karena event dibatalkan
+                        successMessage = "Kegiatan berhasil dibatalkan."
+                    )}
+                } else {
+                    _formState.update { it.copy(errorMessage = "Gagal membatalkan kegiatan (${resp.code()})") }
+                }
+            } catch (e: Exception) {
+                _formState.update { it.copy(errorMessage = "Koneksi gagal: ${e.localizedMessage}") }
+            }
+        }
+    }
+
     fun onDeleteDialogShow()           { _formState.update { it.copy(showDeleteDialog = true) } }
     fun onDeleteDialogDismiss()        { _formState.update { it.copy(showDeleteDialog = false) } }
     fun onStatusSheetShow()            { _formState.update { it.copy(showStatusSheet = true) } }

@@ -35,11 +35,13 @@ class CandidateListViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(CandidateListUiState())
     val uiState: StateFlow<CandidateListUiState> = _uiState.asStateFlow()
-    fun loadEvents(initialEventId: Int? = null) {
+
+    fun loadEvents(initialEventId: Int? = null, initialFilter: String = "Semua") {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
-                val resp = apiService.getOrgEvents()
+                val resp = apiService.getOrgEvents(status = null)
+
                 if (!resp.isSuccessful) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -47,13 +49,21 @@ class CandidateListViewModel @Inject constructor(
                     )
                     return@launch
                 }
+
                 val events = resp.body()?.data ?: emptyList()
-                val startEvent = events.find { it.id == initialEventId } ?: events.firstOrNull()
-                _uiState.value = _uiState.value.copy(
-                    events    = events,
-                    isLoading = false
-                )
-                startEvent?.let { loadRegistrations(it) }
+
+                // LOGIKA BARU: Penanganan sinyal -1 dari Dashboard
+                val startEvent = when (initialEventId) {
+                    -1   -> null // Sinyal pasti untuk "Semua Kegiatan"
+                    null -> events.firstOrNull() // Jika user manual buka tab Candidate
+                    else -> events.find { it.id == initialEventId } // Jika buka kegiatan spesifik
+                }
+
+                _uiState.value = _uiState.value.copy(events = events, isLoading = false)
+
+                // Teruskan initialFilter saat load data pendaftar
+                loadRegistrations(startEvent, initialFilter)
+
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
@@ -62,17 +72,35 @@ class CandidateListViewModel @Inject constructor(
             }
         }
     }
-    private fun loadRegistrations(event: EventDto) {
+
+    fun loadRegistrations(event: EventDto?, initialFilter: String = "Semua") {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, selectedEvent = event)
             try {
-                val resp = apiService.getEventRegistrations(eventId = event.id)
-                val registrations = if (resp.isSuccessful) resp.body()?.data ?: emptyList() else emptyList()
+                val combinedRegistrations = mutableListOf<RegistrationDto>()
+
+                if (event != null) {
+                    val resp = apiService.getEventRegistrations(eventId = event.id)
+                    if (resp.isSuccessful) {
+                        combinedRegistrations.addAll(resp.body()?.data ?: emptyList())
+                    }
+                } else {
+                    val allEvents = _uiState.value.events
+                    allEvents.forEach { e ->
+                        val resp = apiService.getEventRegistrations(eventId = e.id)
+                        if (resp.isSuccessful) {
+                            combinedRegistrations.addAll(resp.body()?.data ?: emptyList())
+                        }
+                    }
+                }
+
+                val currentFilter = if (_uiState.value.selectedFilter == "Semua") initialFilter else _uiState.value.selectedFilter
+
                 _uiState.value = _uiState.value.copy(
-                    allRegistrations      = registrations,
-                    filteredRegistrations = applyFilter(registrations, _uiState.value.selectedFilter),
+                    allRegistrations      = combinedRegistrations,
+                    filteredRegistrations = applyFilter(combinedRegistrations, currentFilter),
                     isLoading             = false,
-                    selectedFilter        = "Semua"
+                    selectedFilter        = currentFilter
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
@@ -83,10 +111,11 @@ class CandidateListViewModel @Inject constructor(
         }
     }
 
-    fun onEventSelected(event: EventDto) {
-        _uiState.value = _uiState.value.copy(showEventSheet = false, selectedFilter = "Semua")
-        loadRegistrations(event)
+    fun onEventSelected(event: EventDto?) {
+        _uiState.value = _uiState.value.copy(showEventSheet = false)
+        loadRegistrations(event, "Semua") // Reset filter jika user ganti kegiatan manual
     }
+
     fun onFilterSelected(filter: String) {
         _uiState.value = _uiState.value.copy(
             selectedFilter        = filter,
@@ -94,14 +123,15 @@ class CandidateListViewModel @Inject constructor(
         )
     }
 
-    private fun applyFilter(list: List<RegistrationDto>, filter: String): List<RegistrationDto> =
-        when (filter) {
-            "Pending"   -> list.filter { it.status == "pending" }
-            "Diterima"  -> list.filter { it.status == "confirmed" }
-            "Ditolak"   -> list.filter { it.status == "cancelled" }
-            "Hadir"     -> list.filter { it.status == "attended" }
-            else        -> list
+    private fun applyFilter(list: List<RegistrationDto>, filter: String): List<RegistrationDto> {
+        return when (filter) {
+            "Pending"  -> list.filter { it.status == "pending" }
+            "Diterima" -> list.filter { it.status == "confirmed" }
+            "Ditolak"  -> list.filter { it.status == "cancelled" }
+            "Hadir"    -> list.filter { it.status == "attended" }
+            else       -> list  // "Semua"
         }
+    }
 
     fun onConfirmRegistration(registrationId: Int) {
         viewModelScope.launch {
@@ -153,12 +183,13 @@ class CandidateListViewModel @Inject constructor(
     }
 
     private fun refreshCurrentRegistrations() {
-        val event = _uiState.value.selectedEvent ?: return
-        loadRegistrations(event)
+        val event = _uiState.value.selectedEvent
+        val currentFilter = _uiState.value.selectedFilter
+        loadRegistrations(event, currentFilter)
     }
 
-    fun onEventSheetShow()    { _uiState.value = _uiState.value.copy(showEventSheet = true) }
-    fun onEventSheetDismiss() { _uiState.value = _uiState.value.copy(showEventSheet = false) }
-    fun onErrorDismissed()    { _uiState.value = _uiState.value.copy(error = null) }
+    fun onEventSheetShow()       { _uiState.value = _uiState.value.copy(showEventSheet = true) }
+    fun onEventSheetDismiss()    { _uiState.value = _uiState.value.copy(showEventSheet = false) }
+    fun onErrorDismissed()       { _uiState.value = _uiState.value.copy(error = null) }
     fun onActionSuccessHandled() { _uiState.value = _uiState.value.copy(actionSuccess = null) }
 }

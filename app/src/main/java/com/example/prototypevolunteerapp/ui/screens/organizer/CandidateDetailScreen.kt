@@ -1,6 +1,8 @@
 package com.example.prototypevolunteerapp.ui.screens.organizer
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -142,7 +144,7 @@ private val AccentGreen   = Color(0xFF5A7A5A)
 private val TextPrimary   = Color(0xFF1E2D1E)
 private val TextSecondary = Color(0xFF6E8F6E)
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CandidateDetailScreen(
     candidateId: Int,
@@ -272,10 +274,19 @@ fun CandidateDetailScreen(
                     item(key = "profile_hero") {
                         Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = CardWhite)) {
                             Column(modifier = Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Box(modifier = Modifier.size(88.dp).clip(CircleShape).background(Color(0xFFDAEFDC)), contentAlignment = Alignment.Center) {
+
+                                // Sentuhan border putih pada Avatar
+                                Box(
+                                    modifier = Modifier
+                                        .size(90.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFDAEFDC))
+                                        .border(3.dp, CardWhite, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     val avatarUrl = volunteer?.avatar
                                     if (!avatarUrl.isNullOrBlank()) {
-                                        AsyncImage(model = avatarUrl, contentDescription = volunteer?.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                                        AsyncImage(model = avatarUrl, contentDescription = volunteer?.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape))
                                     } else {
                                         Text(
                                             volunteer?.name?.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
@@ -283,6 +294,7 @@ fun CandidateDetailScreen(
                                         )
                                     }
                                 }
+
                                 Spacer(Modifier.height(4.dp))
                                 Text(volunteer?.name ?: "Volunteer", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = TextPrimary)
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -330,6 +342,7 @@ fun CandidateDetailScreen(
                             }
                         }
                     }
+
                     item(key = "stats") {
                         Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = CardWhite)) {
                             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -344,20 +357,22 @@ fun CandidateDetailScreen(
 
                     if (!vp?.bio.isNullOrBlank()) {
                         item(key = "bio") {
-                            InfoSectionCard(title = "Tentang") {
-                                Text(vp!!.bio!!, fontSize = 13.sp, color = TextPrimary, lineHeight = 20.sp)
+                            InfoSectionCard(title = "Tentang Relawan") {
+                                QuoteBioBox(bio = vp!!.bio!!)
                             }
                         }
                     }
 
                     if (!vp?.skills.isNullOrEmpty()) {
                         item(key = "skills") {
-                            InfoSectionCard(title = "Keahlian") {
-                                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            InfoSectionCard(title = "Keahlian Utama") {
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
                                     vp!!.skills!!.forEach { skill ->
-                                        Box(modifier = Modifier.background(Color(0xFFDAEFDC), RoundedCornerShape(50.dp)).padding(horizontal = 12.dp, vertical = 5.dp)) {
-                                            Text(skill, fontSize = 12.sp, color = AccentGreen, fontWeight = FontWeight.Medium)
-                                        }
+                                        ModernChip(text = skill, isSkill = true)
                                     }
                                 }
                             }
@@ -366,12 +381,14 @@ fun CandidateDetailScreen(
 
                     if (!vp?.interests.isNullOrEmpty()) {
                         item(key = "interests") {
-                            InfoSectionCard(title = "Minat") {
-                                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            InfoSectionCard(title = "Minat & Ketertarikan") {
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
                                     vp!!.interests!!.forEach { interest ->
-                                        Box(modifier = Modifier.background(Color(0xFFFFF3CD), RoundedCornerShape(50.dp)).padding(horizontal = 12.dp, vertical = 5.dp)) {
-                                            Text(interest, fontSize = 12.sp, color = Color(0xFF7A5C00), fontWeight = FontWeight.Medium)
-                                        }
+                                        ModernChip(text = interest, isSkill = false)
                                     }
                                 }
                             }
@@ -451,6 +468,8 @@ fun CandidateDetailScreen(
     }
 }
 
+// --- Helper UI Components ---
+
 @Composable
 private fun InfoSectionCard(title: String, content: @Composable () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp), colors = CardDefaults.cardColors(containerColor = CardWhite), elevation = CardDefaults.cardElevation(0.dp)) {
@@ -481,5 +500,59 @@ private fun StatBox(label: String, value: String, bg: Color, textColor: Color, m
             Text(value, fontWeight = FontWeight.Bold, fontSize = 22.sp, color = textColor, lineHeight = 24.sp)
             Text(label, fontSize = 10.sp, color = textColor.copy(alpha = 0.7f), lineHeight = 14.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(horizontal = 4.dp))
         }
+    }
+}
+
+@Composable
+private fun ModernChip(text: String, isSkill: Boolean) {
+    val bgColor = if (isSkill) Color(0xFFE8F5E9) else Color(0xFFFFF8E1)
+    val contentColor = if (isSkill) Color(0xFF2E7D32) else Color(0xFFF57F17)
+    val borderColor = if (isSkill) Color(0xFFA5D6A7) else Color(0xFFFFE082)
+    val icon = if (isSkill) Icons.Default.Star else Icons.Default.LocalFireDepartment
+
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = bgColor,
+        border = BorderStroke(1.dp, borderColor)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(12.dp),
+                tint = contentColor
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(text = text, fontSize = 12.sp, color = contentColor, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun QuoteBioBox(bio: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFFF9FBF9), RoundedCornerShape(8.dp))
+            .padding(8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .height(IntrinsicSize.Min)
+                .background(AccentGreen, RoundedCornerShape(50.dp))
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = "\"$bio\"",
+            fontSize = 13.sp,
+            color = TextPrimary.copy(alpha = 0.8f),
+            lineHeight = 20.sp,
+            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+            modifier = Modifier.padding(vertical = 4.dp)
+        )
     }
 }
