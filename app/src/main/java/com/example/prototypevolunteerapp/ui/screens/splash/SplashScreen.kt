@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -98,11 +99,22 @@ fun SplashScreen() {
 
             when (savedSession.role) {
                 SessionPreferences.ROLE_VOLUNTEER -> {
+                    // Fetch volunteer profile dari API sebelum restore session
+                    val volunteerProfileDto = try {
+                        val profileResp = apiService.getVolunteerProfile()
+                        if (profileResp.isSuccessful) {
+                            profileResp.body()?.user?.volunteer_profile
+                        } else null
+                    } catch (e: Exception) {
+                        null
+                    }
+
                     userSession.restoreSession(
-                        email     = savedSession.email,
-                        name      = savedSession.name,
-                        volunteer = null,
-                        avatarUrl = savedSession.avatarUrl
+                        email               = savedSession.email,
+                        name                = savedSession.name,
+                        volunteer           = null,
+                        avatarUrl           = savedSession.avatarUrl,
+                        volunteerProfileDto = volunteerProfileDto
                     )
                     notificationRepo.initForUser(isDummyAccount = false)
 
@@ -134,7 +146,15 @@ fun SplashScreen() {
     Box(
         modifier         = Modifier
             .fillMaxSize()
-            .background(Color(0xFFBFDCFE)),
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFFFFFFF),
+                        Color(0xFFE6F0FF),
+                        Color(0xFFCCE0FF)
+                    )
+                )
+            ),
         contentAlignment = Alignment.Center
     ) {
         Column(

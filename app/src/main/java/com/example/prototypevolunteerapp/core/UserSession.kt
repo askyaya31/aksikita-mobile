@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.prototypevolunteerapp.data.model.getDummyVolunteers
 import com.example.prototypevolunteerapp.data.model.Volunteer
+import com.example.prototypevolunteerapp.data.model.VolunteerExp
+import com.example.prototypevolunteerapp.data.remote.dto.VolunteerProfileDto
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -62,13 +64,33 @@ class UserSession @Inject constructor(){
         } else false
     }
     fun restoreSession(
-        email:     String,
-        name:      String,
-        volunteer: Volunteer?,
-        avatarUrl: String? = null
+        email:               String,
+        name:                String,
+        volunteer:           Volunteer?,
+        avatarUrl:           String? = null,
+        volunteerProfileDto: VolunteerProfileDto? = null
     ) {
         currentUser = User(name = name, email = email, avatarUrl = avatarUrl)
-        currentVolunteerProfile = volunteer ?: dummyVolunteerMap[email]
+        
+        if (volunteer != null) {
+            currentVolunteerProfile = volunteer
+        } else if (volunteerProfileDto != null) {
+            currentVolunteerProfile = Volunteer(
+                name        = name,
+                birthPlace  = volunteerProfileDto.city ?: "",
+                birthDate   = volunteerProfileDto.date_of_birth ?: "",
+                education   = "",
+                skills      = volunteerProfileDto.skills ?: emptyList(),
+                interests   = volunteerProfileDto.interests ?: emptyList(),
+                about       = volunteerProfileDto.bio ?: "",
+                experiences = emptyList(),
+                imageRes    = 0,
+                email       = email,
+                phone       = null
+            )
+        } else {
+            currentVolunteerProfile = dummyVolunteerMap[email]
+        }
     }
 
     fun logout() {
