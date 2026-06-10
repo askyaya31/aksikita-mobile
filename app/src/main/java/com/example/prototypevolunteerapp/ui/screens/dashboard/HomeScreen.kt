@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,21 +36,22 @@ import com.example.prototypevolunteerapp.core.Routes
 import com.example.prototypevolunteerapp.data.model.ActivityData
 import com.example.prototypevolunteerapp.data.remote.dto.RegistrationDto
 
-private val NavyDark    = Color(0xFF1E3A8A)
-private val PrimaryBlue = Color(0xFF3B82F6)
-private val BlueMid     = Color(0xFF60A5FA)
-private val BluePale    = Color(0xFFBFDBFE)
-private val BlueGhost   = Color(0xFFEFF6FF)
-private val AccentOrange= Color(0xFFE8501A)
-private val BgScreen    = Color(0xFFF8FAFF)
-private val TextDark    = Color(0xFF0F172A)
-private val TextMuted   = Color(0xFF64748B)
+private val NavyDark     = Color(0xFF1E3A8A)
+private val PrimaryBlue  = Color(0xFF3B82F6)
+private val BlueMid      = Color(0xFF60A5FA)
+private val BluePale     = Color(0xFFBFDBFE)
+private val BlueGhost    = Color(0xFFEFF6FF)
+private val AccentOrange = Color(0xFFE8501A)
+private val BgScreen     = Color(0xFFF8FAFF)
+private val TextDark     = Color(0xFF0F172A)
+private val TextMuted    = Color(0xFF64748B)
+private val GreenOnline  = Color(0xFF22C55E)
 
 private data class BottomNavItem(
-    val label:         String,
-    val selectedIcon:  ImageVector,
-    val unselectedIcon:ImageVector,
-    val route:         NavKey
+    val label:          String,
+    val selectedIcon:   ImageVector,
+    val unselectedIcon: ImageVector,
+    val route:          NavKey
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,32 +59,30 @@ private data class BottomNavItem(
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
-    val backStack = LocalBackStack.current
-    val uiState   by viewModel.uiState.collectAsState()
-    val currentUser = viewModel.currentUser
+    val backStack      = LocalBackStack.current
+    val uiState        by viewModel.uiState.collectAsState()
+    val currentUser    = viewModel.currentUser
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
-    LaunchedEffect(Unit) {
-        viewModel.refreshUser()
-    }
+    LaunchedEffect(Unit) { viewModel.refreshUser() }
+
     val navItems = listOf(
-        BottomNavItem("Beranda",    Icons.Filled.Home,              Icons.Outlined.Home,             Routes.HomeRoute),
-        BottomNavItem("Kegiatan",   Icons.Filled.VolunteerActivism, Icons.Outlined.VolunteerActivism, Routes.ActivitiesRoute),
-        BottomNavItem("Riwayat",    Icons.Filled.History,           Icons.Outlined.History,           Routes.ActivityHistoryRoute),
-        BottomNavItem("Notifikasi", Icons.Filled.Notifications,     Icons.Outlined.NotificationsNone, Routes.NotificationsRoute),
-        BottomNavItem("Profil",     Icons.Filled.Person,            Icons.Outlined.Person,            Routes.ProfileRoute)
+        BottomNavItem("Beranda",  Icons.Filled.Home,              Icons.Outlined.Home,              Routes.HomeRoute),
+        BottomNavItem("Kegiatan", Icons.Filled.VolunteerActivism, Icons.Outlined.VolunteerActivism, Routes.ActivitiesRoute),
+        BottomNavItem("Riwayat",  Icons.Filled.History,           Icons.Outlined.History,           Routes.ActivityHistoryRoute),
+        BottomNavItem("Saved",    Icons.Filled.Bookmark,          Icons.Outlined.BookmarkBorder,    Routes.SavedActivitiesRoute),
+        BottomNavItem("Profil",   Icons.Filled.Person,            Icons.Outlined.Person,            Routes.ProfileRoute)
     )
 
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
                 viewModel.refreshUser()
+                viewModel.onTabSelected(0)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     Scaffold(
@@ -89,7 +90,6 @@ fun HomeScreen(
             VolunteerBottomBar(
                 navItems    = navItems,
                 selectedTab = uiState.selectedTab,
-                unreadCount = uiState.unreadNotifCount,
                 onSelect    = { index ->
                     viewModel.onTabSelected(index)
                     if (index != 0) backStack.add(navItems[index].route)
@@ -108,16 +108,35 @@ fun HomeScreen(
                     avatarUrl      = currentUser?.avatarUrl,
                     unreadCount    = uiState.unreadNotifCount,
                     onProfileClick = { backStack.add(Routes.ProfileRoute) },
-                    onNotifClick   = { backStack.add(Routes.NotificationsRoute) },
-                    onSearchClick  = { backStack.add(Routes.ActivitiesRoute) }
+                    onNotifClick   = { backStack.add(Routes.NotificationsRoute) }
                 )
             }
-            item(key = "stats") {
-                HomeStatRow(
-                    activeCount    = uiState.activeRegistrations.size,
-                    completedCount = uiState.completedCount,
-                    nearbyCount    = uiState.apiEvents.size
+
+            item(key = "nearby_section") {
+                HomeSectionHeader(
+                    title    = "Kegiatan di ${uiState.userCity ?: "Sekitarmu"}",
+                    subtitle = null,
+                    onSeeAll = { backStack.add(Routes.ActivitiesRoute) }
                 )
+                if (uiState.nearbyEvents.isNotEmpty()) {
+                    NearbyEventsPager(
+                        events      = uiState.nearbyEvents,
+                        onItemClick = { event ->
+                            backStack.add(
+                                Routes.ActivityDetailRoute(
+                                    id       = event.id,
+                                    slug     = event.slug,
+                                    title    = event.title,
+                                    location = event.location,
+                                    desc     = event.description,
+                                    imageRes = event.imageRes
+                                )
+                            )
+                        }
+                    )
+                } else {
+                    NearbyEventsPlaceholder()
+                }
             }
 
             if (uiState.activeRegistrations.isNotEmpty()) {
@@ -138,7 +157,7 @@ fun HomeScreen(
                                     id       = event.id.toString(),
                                     slug     = event.slug ?: "",
                                     title    = event.title,
-                                    location = "${event.city ?: ""}, ${event.province ?: ""}".trim(',',' '),
+                                    location = "${event.city ?: ""}, ${event.province ?: ""}".trim(',', ' '),
                                     desc     = event.description ?: "",
                                     imageRes = event.poster ?: ""
                                 )
@@ -147,45 +166,18 @@ fun HomeScreen(
                     )
                 }
             }
-            if (uiState.nearbyEvents.isNotEmpty()) {
-                item(key = "nearby_header") {
-                    HomeSectionHeader(
-                        title    = "Kegiatan di ${uiState.userCity ?: "Kotamu"}",
-                        subtitle = null,
-                        onSeeAll = { backStack.add(Routes.ActivitiesRoute) }
-                    )
-                }
-                item(key = "nearby_events") {
-                    EventHorizontalRow(
-                        events     = uiState.nearbyEvents,
-                        onItemClick = { event ->
-                            backStack.add(
-                                Routes.ActivityDetailRoute(
-                                    id       = event.id,
-                                    slug     = event.slug,
-                                    title    = event.title,
-                                    location = event.location,
-                                    desc     = event.description,
-                                    imageRes = event.imageRes
-                                )
-                            )
-                        },
-                        onSeeAll = { backStack.add(Routes.ActivitiesRoute) }
-                    )
-                }
-            }
 
             item(key = "category_chips") {
                 CategoryChipRow(
-                    categories    = uiState.categoryChips,
-                    selectedChip  = uiState.selectedCategory,
+                    categories     = uiState.categoryChips,
+                    selectedChip   = uiState.selectedCategory,
                     onChipSelected = { viewModel.onCategoryChipSelected(it) }
                 )
             }
 
             item(key = "events_header") {
                 HomeSectionHeader(
-                    title    = "Kegiatan Tersedia",
+                    title    = "Available Opportunities",
                     subtitle = null,
                     onSeeAll = { backStack.add(Routes.ActivitiesRoute) }
                 )
@@ -200,8 +192,8 @@ fun HomeScreen(
                         ) { CircularProgressIndicator(color = PrimaryBlue) }
                     }
                     uiState.apiEvents.isNotEmpty() -> {
-                        EventHorizontalRow(
-                            events    = uiState.apiEvents,
+                        EventVerticalList(
+                            events      = uiState.apiEvents,
                             onItemClick = { event ->
                                 backStack.add(
                                     Routes.ActivityDetailRoute(
@@ -213,8 +205,7 @@ fun HomeScreen(
                                         imageRes = event.imageRes
                                     )
                                 )
-                            },
-                            onSeeAll = { backStack.add(Routes.ActivitiesRoute) }
+                            }
                         )
                     }
                     uiState.apiError != null -> {
@@ -241,37 +232,54 @@ fun HomeScreen(
     }
 }
 
+// Header
 @Composable
 private fun HomeHeader(
     userName:       String,
     avatarUrl:      String?,
     unreadCount:    Int,
     onProfileClick: () -> Unit,
-    onNotifClick:   () -> Unit,
-    onSearchClick:  () -> Unit
+    onNotifClick:   () -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.linearGradient(listOf(NavyDark, Color(0xFF1A3575), PrimaryBlue)))
-            .padding(horizontal = 20.dp)
-            .padding(top = 24.dp, bottom = 32.dp)
+            .height(120.dp)
+            .background(PrimaryBlue)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        Box(
+            modifier = Modifier
+                .size(140.dp)
+                .offset(x = (-30).dp, y = (-30).dp)
+                .background(Color.White.copy(alpha = 0.08f), CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .size(110.dp)
+                .align(Alignment.TopEnd)
+                .offset(x = 30.dp, y = (-15).dp)
+                .background(Color.White.copy(alpha = 0.08f), CircleShape)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center)
+                .padding(horizontal = 20.dp)
+                .padding(top = 12.dp, bottom = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
             Row(
-                modifier              = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Row(
-                    verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+                Box {
                     Box(
                         modifier         = Modifier
-                            .size(46.dp)
+                            .size(52.dp)
                             .clip(CircleShape)
-                            .background(BlueMid.copy(alpha = 0.35f))
+                            .background(BlueMid.copy(alpha = 0.4f))
                             .clickable { onProfileClick() },
                         contentAlignment = Alignment.Center
                     ) {
@@ -286,119 +294,109 @@ private fun HomeHeader(
                             Text(
                                 text       = userName.take(1).uppercase(),
                                 color      = Color.White,
-                                fontSize   = 18.sp,
+                                fontSize   = 22.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                     }
-                    Column {
-                        Text(
-                            "Selamat datang kembali,",
-                            color    = Color.White.copy(alpha = 0.65f),
-                            fontSize = 12.sp
-                        )
-                        Text(
-                            userName.split(" ").firstOrNull() ?: userName,
-                            color      = Color.White,
-                            fontSize   = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                Box(
-                    modifier         = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.12f))
-                        .clickable { onNotifClick() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Notifications,
-                        contentDescription = "Notifikasi",
-                        tint     = Color.White,
-                        modifier = Modifier.size(22.dp)
+                    // Green online dot
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .align(Alignment.BottomEnd)
+                            .background(GreenOnline, CircleShape)
+                            .padding(2.dp)
                     )
-                    if (unreadCount > 0) {
-                        Box(
-                            modifier = Modifier
-                                .size(9.dp)
-                                .background(AccentOrange, CircleShape)
-                                .align(Alignment.TopEnd)
-                        )
-                    }
+                }
+
+                Column {
+                    Text(
+                        "Welcome Back",
+                        color    = Color.White.copy(alpha = 0.75f),
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        "Hello, ${userName.split(" ").firstOrNull() ?: userName}!",
+                        color      = Color.White,
+                        fontSize   = 17.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(Color.White.copy(alpha = 0.14f))
-                    .clickable { onSearchClick() }
-                    .padding(horizontal = 16.dp, vertical = 13.dp),
-                verticalAlignment     = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+
+            Box(
+                modifier         = Modifier
+                    .size(46.dp)
+                    .clickable { onNotifClick() },
+                contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Search, null, tint = Color.White.copy(0.65f), modifier = Modifier.size(18.dp))
-                Text("Cari kegiatan sosial...", color = Color.White.copy(0.55f), fontSize = 14.sp)
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color.White.copy(alpha = 0.15f), CircleShape)
+                        .align(Alignment.Center)
+                )
+                Icon(
+                    Icons.Default.Notifications,
+                    contentDescription = "Notifikasi",
+                    tint     = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+                if (unreadCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(AccentOrange, CircleShape)
+                            .align(Alignment.TopEnd)
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun HomeStatRow(
-    activeCount:    Int,
-    completedCount: Int,
-    nearbyCount:    Int
-) {
-    Row(
-        modifier              = Modifier
-            .fillMaxWidth()
-            .offset(y = (-16).dp)
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        StatMiniCard(
-            modifier = Modifier.weight(1f),
-            value    = activeCount.toString(),
-            label    = "Aktif",
-            color    = PrimaryBlue
-        )
-        StatMiniCard(
-            modifier = Modifier.weight(1f),
-            value    = completedCount.toString(),
-            label    = "Selesai",
-            color    = Color(0xFF0E7B6C)
-        )
-        StatMiniCard(
-            modifier = Modifier.weight(1f),
-            value    = nearbyCount.toString(),
-            label    = "Tersedia",
-            color    = Color(0xFFD4900A)
-        )
-    }
-}
-
-@Composable
-private fun StatMiniCard(modifier: Modifier, value: String, label: String, color: Color) {
+private fun NearbyEventsPlaceholder() {
     Card(
-        modifier  = modifier,
-        shape     = RoundedCornerShape(14.dp),
-        elevation = CardDefaults.cardElevation(4.dp),
-        colors    = CardDefaults.cardColors(containerColor = Color.White)
+        modifier  = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .padding(horizontal = 16.dp),
+        shape     = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(2.dp),
+        colors    = CardDefaults.cardColors(containerColor = BluePale.copy(alpha = 0.4f))
     ) {
-        Column(
-            modifier            = Modifier.padding(vertical = 14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Box(
+            modifier         = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Text(value, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, color = color)
-            Text(label, fontSize = 11.sp, color = TextMuted)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Default.LocationOff,
+                    contentDescription = null,
+                    tint     = PrimaryBlue.copy(alpha = 0.5f),
+                    modifier = Modifier.size(36.dp)
+                )
+                Text(
+                    "Belum ada kegiatan di sekitarmu",
+                    fontSize   = 13.sp,
+                    color      = TextMuted,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    "Coba cek kegiatan tersedia di bawah",
+                    fontSize = 11.sp,
+                    color    = TextMuted.copy(alpha = 0.7f)
+                )
+            }
         }
     }
 }
 
+// Section Header
 @Composable
 private fun HomeSectionHeader(title: String, subtitle: String?, onSeeAll: () -> Unit) {
     Row(
@@ -411,9 +409,7 @@ private fun HomeSectionHeader(title: String, subtitle: String?, onSeeAll: () -> 
     ) {
         Column {
             Text(title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            if (subtitle != null) {
-                Text(subtitle, fontSize = 11.5.sp, color = TextMuted)
-            }
+            if (subtitle != null) Text(subtitle, fontSize = 11.5.sp, color = TextMuted)
         }
         TextButton(onClick = onSeeAll, contentPadding = PaddingValues(0.dp)) {
             Text("Lihat semua", fontSize = 12.sp, color = PrimaryBlue, fontWeight = FontWeight.SemiBold)
@@ -421,6 +417,8 @@ private fun HomeSectionHeader(title: String, subtitle: String?, onSeeAll: () -> 
         }
     }
 }
+
+// Active Registrations
 
 @Composable
 private fun ActiveRegistrationList(
@@ -436,8 +434,8 @@ private fun ActiveRegistrationList(
             val (statusColor, statusLabel) = when (reg.status) {
                 "confirmed" -> Pair(Color(0xFF0E7B6C), "Dikonfirmasi")
                 "pending"   -> Pair(Color(0xFFD4900A), "Menunggu")
-                "attended"  -> Pair(PrimaryBlue,        "Hadir")
-                else        -> Pair(TextMuted,           reg.status)
+                "attended"  -> Pair(PrimaryBlue,       "Hadir")
+                else        -> Pair(TextMuted,          reg.status)
             }
             Card(
                 modifier  = Modifier.fillMaxWidth().clickable { onItemClick(reg) },
@@ -446,8 +444,8 @@ private fun ActiveRegistrationList(
                 colors    = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Row(
-                    modifier          = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    modifier              = Modifier.padding(14.dp),
+                    verticalAlignment     = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Box(
@@ -469,15 +467,12 @@ private fun ActiveRegistrationList(
                         )
                         Text(
                             event?.organization?.organization_name ?: "",
-                            fontSize = 11.sp,
-                            color    = PrimaryBlue,
+                            fontSize   = 11.sp,
+                            color      = PrimaryBlue,
                             fontWeight = FontWeight.Medium
                         )
                     }
-                    Surface(
-                        shape = RoundedCornerShape(99.dp),
-                        color = statusColor.copy(alpha = 0.1f)
-                    ) {
+                    Surface(shape = RoundedCornerShape(99.dp), color = statusColor.copy(alpha = 0.1f)) {
                         Text(
                             statusLabel,
                             modifier   = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -491,6 +486,159 @@ private fun ActiveRegistrationList(
         }
     }
 }
+
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun NearbyEventsPager(
+    events:      List<ActivityData>,
+    onItemClick: (ActivityData) -> Unit
+) {
+    if (events.isEmpty()) return
+
+    val pageCount  = Int.MAX_VALUE
+    val startIndex = pageCount / 2 - (pageCount / 2 % events.size)
+    val pagerState = rememberPagerState(
+        initialPage = startIndex,
+        pageCount   = { pageCount }
+    )
+
+    Column {
+        HorizontalPager(
+            state             = pagerState,
+            modifier          = Modifier.fillMaxWidth(),
+            contentPadding    = PaddingValues(horizontal = 24.dp),
+            pageSpacing       = 12.dp
+        ) { page ->
+            val realIndex = page % events.size
+            val event     = events[realIndex]
+            NearbyEventCard(event = event, onClick = { onItemClick(event) })
+        }
+
+
+        if (events.size > 1) {
+            Row(
+                modifier              = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
+                repeat(events.size) { index ->
+                    val isSelected = pagerState.currentPage % events.size == index
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 3.dp)
+                            .size(if (isSelected) 8.dp else 6.dp)
+                            .background(
+                                if (isSelected) PrimaryBlue else BluePale,
+                                CircleShape
+                            )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NearbyEventCard(event: ActivityData, onClick: () -> Unit) {
+    Card(
+        modifier  = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .clickable { onClick() },
+        shape     = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            val context    = LocalContext.current
+            val localResId = remember(event.imageRes) {
+                context.resources.getIdentifier(event.imageRes, "drawable", context.packageName)
+            }
+            AsyncImage(
+                model              = if (localResId != 0) localResId else event.imageRes.ifBlank { null },
+                contentDescription = event.title,
+                contentScale       = ContentScale.Crop,
+                modifier           = Modifier.fillMaxSize()
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.65f))
+                        )
+                    )
+            )
+
+            // Nearby chip
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(12.dp),
+                shape = RoundedCornerShape(99.dp),
+                color = PrimaryBlue
+            ) {
+                Text(
+                    "Nearby Events",
+                    modifier   = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                    fontSize   = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color      = Color.White
+                )
+            }
+
+            Row(
+                modifier              = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment     = Alignment.Bottom
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        event.title,
+                        fontSize   = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color      = Color.White,
+                        maxLines   = 2,
+                        overflow   = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Row(
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Icon(Icons.Default.LocationOn, null, tint = Color.White.copy(0.8f), modifier = Modifier.size(12.dp))
+                        Text(event.location, fontSize = 11.sp, color = Color.White.copy(0.8f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+
+                Spacer(Modifier.width(8.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color.White.copy(alpha = 0.2f)
+                ) {
+                    Row(
+                        modifier          = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text("View Detail", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Icon(Icons.Default.ChevronRight, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Category Chips
+
 @Composable
 private fun CategoryChipRow(
     categories:    List<String>,
@@ -503,15 +651,15 @@ private fun CategoryChipRow(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        val allSelected = selectedChip == null
         FilterChip(
-            selected = allSelected,
+            selected = selectedChip == null,
             onClick  = { onChipSelected(null) },
-            label    = { Text("Semua", fontSize = 12.sp) },
+            label    = { Text("All", fontSize = 12.sp) },
             colors   = FilterChipDefaults.filterChipColors(
-                selectedContainerColor = NavyDark,
+                selectedContainerColor = PrimaryBlue,
                 selectedLabelColor     = Color.White
-            )
+            ),
+            shape = RoundedCornerShape(99.dp)
         )
         categories.forEach { cat ->
             val isSelected = selectedChip == cat
@@ -522,77 +670,110 @@ private fun CategoryChipRow(
                 colors   = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = PrimaryBlue,
                     selectedLabelColor     = Color.White
-                )
+                ),
+                shape = RoundedCornerShape(99.dp)
             )
         }
     }
 }
 
+// Events List
+
 @Composable
-private fun EventHorizontalRow(
+private fun EventVerticalList(
     events:      List<ActivityData>,
-    onItemClick: (ActivityData) -> Unit,
-    onSeeAll:    () -> Unit
+    onItemClick: (ActivityData) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    Column(
+        modifier            = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         events.take(8).forEach { event ->
-            EventMiniCard(activity = event, onClick = { onItemClick(event) })
+            EventListCard(activity = event, onClick = { onItemClick(event) })
         }
     }
 }
 
 @Composable
-private fun EventMiniCard(activity: ActivityData, onClick: () -> Unit) {
+private fun EventListCard(activity: ActivityData, onClick: () -> Unit) {
     val context    = LocalContext.current
     val localResId = remember(activity.imageRes) {
         context.resources.getIdentifier(activity.imageRes, "drawable", context.packageName)
     }
+
     Card(
+        modifier  = Modifier.fillMaxWidth().clickable { onClick() },
         shape     = RoundedCornerShape(16.dp),
-        modifier  = Modifier.width(168.dp).clickable(onClick = onClick),
-        colors    = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(2.dp)
+        elevation = CardDefaults.cardElevation(2.dp),
+        colors    = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Column {
-            Box(modifier = Modifier.fillMaxWidth().height(110.dp)) {
+        Row(
+            modifier          = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(90.dp)
+                    .clip(RoundedCornerShape(12.dp))
+            ) {
                 AsyncImage(
                     model              = if (localResId != 0) localResId else activity.imageRes.ifBlank { null },
                     contentDescription = activity.title,
                     contentScale       = ContentScale.Crop,
-                    modifier           = Modifier
-                        .fillMaxWidth()
-                        .height(110.dp)
-                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .align(Alignment.BottomCenter)
-                        .background(
-                            Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.35f)))
-                        )
+                    modifier           = Modifier.fillMaxSize()
                 )
             }
+
+            // Info
             Column(
-                modifier            = Modifier.padding(10.dp),
+                modifier            = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(
-                    activity.title,
-                    fontSize   = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color      = TextDark,
-                    maxLines   = 2,
-                    overflow   = TextOverflow.Ellipsis,
-                    lineHeight = 16.sp
-                )
+                // Title + category badge
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment     = Alignment.Top
+                ) {
+                    Text(
+                        activity.title,
+                        fontSize   = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color      = TextDark,
+                        maxLines   = 2,
+                        overflow   = TextOverflow.Ellipsis,
+                        modifier   = Modifier.weight(1f),
+                        lineHeight = 17.sp
+                    )
+                    if (!activity.category.isNullOrBlank()) {
+                        Spacer(Modifier.width(6.dp))
+                        Surface(
+                            shape = RoundedCornerShape(99.dp),
+                            color = PrimaryBlue.copy(alpha = 0.1f)
+                        ) {
+                            Text(
+                                activity.category,
+                                modifier   = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                                fontSize   = 9.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color      = PrimaryBlue
+                            )
+                        }
+                    }
+                }
+
+                // Organization
+                if (!activity.organizationName.isNullOrBlank()) {
+                    Text(
+                        activity.organizationName,
+                        fontSize   = 11.sp,
+                        color      = TextMuted,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                // Location
                 Row(
                     verticalAlignment     = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
@@ -600,16 +781,38 @@ private fun EventMiniCard(activity: ActivityData, onClick: () -> Unit) {
                     Icon(Icons.Default.LocationOn, null, tint = PrimaryBlue, modifier = Modifier.size(11.dp))
                     Text(activity.location, fontSize = 10.sp, color = TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
+
+                // Duration
+                if (!activity.duration.isNullOrBlank()) {
+                    Row(
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Icon(Icons.Default.Schedule, null, tint = TextMuted, modifier = Modifier.size(11.dp))
+                        Text(activity.duration, fontSize = 10.sp, color = TextMuted)
+                    }
+                }
+
+                // Spots left
+                if (activity.remainingQuota != null) {
+                    Text(
+                        "${activity.remainingQuota} spots left",
+                        fontSize   = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color      = AccentOrange
+                    )
+                }
             }
         }
     }
 }
 
+// Bottom Bar
+
 @Composable
 private fun VolunteerBottomBar(
     navItems:    List<BottomNavItem>,
     selectedTab: Int,
-    unreadCount: Int,
     onSelect:    (Int) -> Unit
 ) {
     Surface(
@@ -641,22 +844,12 @@ private fun VolunteerBottomBar(
                     } else {
                         Spacer(Modifier.height(7.dp))
                     }
-                    Box {
-                        Icon(
-                            if (isSelected) item.selectedIcon else item.unselectedIcon,
-                            item.label,
-                            tint     = tint,
-                            modifier = Modifier.size(22.dp)
-                        )
-                        if (index == 3 && unreadCount > 0) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .background(AccentOrange, CircleShape)
-                                    .align(Alignment.TopEnd)
-                            )
-                        }
-                    }
+                    Icon(
+                        if (isSelected) item.selectedIcon else item.unselectedIcon,
+                        item.label,
+                        tint     = tint,
+                        modifier = Modifier.size(22.dp)
+                    )
                     Spacer(Modifier.height(2.dp))
                     Text(
                         item.label,

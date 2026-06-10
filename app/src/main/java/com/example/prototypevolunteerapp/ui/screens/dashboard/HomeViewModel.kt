@@ -105,7 +105,14 @@ class HomeViewModel @Inject constructor(
                                 }
                             }.ifBlank { "Lokasi tidak tersedia" },
                             description = event.description ?: "",
-                            imageRes    = event.poster ?: ""
+                            imageRes    = event.poster ?: "",
+                            organizationName = event.organization?.organization_name,
+                            startDate = event.start_date,
+                            duration = if (event.start_time != null && event.end_time != null)
+                                        "${event.start_time} - ${event.end_time}"
+                                        else null,
+                            remainingQuota = event.remaining_quota,
+                            category = event.categories?.firstOrNull()?.name
                         )
                     }
                     _uiState.update { it.copy(apiEvents = mapped, isLoadingApi = false) }
@@ -148,8 +155,10 @@ class HomeViewModel @Inject constructor(
         }
     }
     private fun loadNearbyEvents() {
-        val city = userSession.currentVolunteerProfile?.birthPlace
-            ?: return
+        val cityFromDto     = userSession.volunteerProfileDto?.city
+        val cityFromProfile = userSession.currentVolunteerProfile?.birthPlace
+        val city            = cityFromDto ?: cityFromProfile?: return
+
         viewModelScope.launch {
             _uiState.update { it.copy(userCity = city) }
             try {
@@ -182,18 +191,21 @@ class HomeViewModel @Inject constructor(
 
     private fun loadCategories() {
         viewModelScope.launch {
-            try {
-                val response = apiService.getCategories()
-                if (response.isSuccessful && response.body() != null) {
-                    val names = response.body()!!.categories.map { it.name }
-                    _uiState.update { it.copy(categoryChips = names) }
+            repeat(3) { attempt ->
+                try {
+                    val response = apiService.getCategories()
+                    if (response.isSuccessful && response.body() != null) {
+                        val names = response.body()!!.categories.map { it.name }
+                        _uiState.update { it.copy(categoryChips = names) }
+                        return@launch
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("HomeViewModel", "loadCategories attempt ${attempt + 1} error: ${e.message}")
+                    if (attempt < 2) kotlinx.coroutines.delay(1000L)
                 }
-            } catch (e: Exception) {
-                android.util.Log.w("HomeViewModel", "loadCategories error: ${e.message}")
             }
         }
     }
-
     fun onTabSelected(index: Int) {
         _uiState.update { it.copy(selectedTab = index) }
     }

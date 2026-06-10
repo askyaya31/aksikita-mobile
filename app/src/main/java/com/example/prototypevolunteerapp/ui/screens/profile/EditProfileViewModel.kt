@@ -193,7 +193,7 @@ class EditProfileViewModel @Inject constructor(
                         birthDate = DateUtils.extractDatePart(vp?.date_of_birth),
                         skills    = vp?.skills ?: emptyList(),
                         interests = vp?.interests ?: emptyList()
-                    )?.let { userSession.updateVolunteerProfile(it) }
+                    )?.let { userSession.updateVolunteerProfileDto(vp) }
                     val newAvatarUrl = resolveAvatarUrl(updated.avatar)
                         ?: resolveAvatarUrl(vp?.avatar)
 

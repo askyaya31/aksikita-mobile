@@ -19,76 +19,112 @@ data class ActivityDetailUiState(
     val isRegistered:    Boolean   = false,
     val isProcessing:    Boolean   = false,
     val feedbackMessage: String?   = null,
-    val isSaved:         Boolean   = false
+    val isSaved:         Boolean   = false,
+    val isLiked:         Boolean   = false,
+    val likesCount:      Int       = 0
 )
 
 @HiltViewModel
 class ActivityDetailViewModel @Inject constructor(
-    private val apiService:       ApiService,
-    private val userSession:      UserSession,
-    private val savedStore:       SavedActivitiesStore
+    private val apiService:  ApiService,
+    private val userSession: UserSession,
+    private val savedStore:  SavedActivitiesStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ActivityDetailUiState())
     val uiState: StateFlow<ActivityDetailUiState> = _uiState.asStateFlow()
-    private val _isSaved  = MutableStateFlow(false)
-    val isSaved: StateFlow<Boolean> = _isSaved.asStateFlow()
 
-    private val _isLiked  = MutableStateFlow(false)
-    val isLiked: StateFlow<Boolean> = _isLiked.asStateFlow()
-
-    private val _likesCount = MutableStateFlow(0)
-    val likesCount: StateFlow<Int> = _likesCount.asStateFlow()
     private var currentEventId: Int = 0
 
     fun init(eventId: Int, slug: String, titleHint: String, descHint: String) {
         currentEventId = eventId
-        _uiState.value = _uiState.value.copy(
-            isLoggedIn = userSession.isLoggedIn
-        )
-
-        viewModelScope.launch {
-            savedStore.savedIdsFlow.collect { savedIds ->
-                _uiState.value = _uiState.value.copy(isSaved = savedIds.contains(eventId.toString()))
-            }
-        }
+        _uiState.value = _uiState.value.copy(isLoggedIn = userSession.isLoggedIn)
 
         if (eventId > 0) {
             fetchEventDetail(eventId, slug)
+            if (userSession.isLoggedIn) {
+                checkSavedStatus(eventId)
+                checkLikedStatus(eventId)
+            }
         }
     }
-    fun toggleSave(eventId: Int) {
+
+    private fun checkSavedStatus(eventId: Int) {
         viewModelScope.launch {
             try {
-                val resp = apiService.toggleSaveEvent(eventId)
+                val resp = apiService.getSavedEvents()
                 if (resp.isSuccessful) {
-                    _isSaved.value = resp.body()?.saved ?: false
+                    val isSaved = resp.body()?.data?.any { it.event_id == eventId } ?: false
+                    _uiState.value = _uiState.value.copy(isSaved = isSaved)
                 }
             } catch (_: Exception) {}
         }
     }
 
-    fun toggleLike(eventId: Int) {
+    private fun checkLikedStatus(eventId: Int) {
         viewModelScope.launch {
             try {
-                val resp = apiService.toggleLikeEvent(eventId)
+                val resp = apiService.getLikedEvents()
                 if (resp.isSuccessful) {
-                    _isLiked.value   = resp.body()?.liked ?: false
-                    _likesCount.value = resp.body()?.likes_count ?: 0
+                    val liked = resp.body()?.data?.find { it.event_id == eventId }
+                    _uiState.value = _uiState.value.copy(
+                        isLiked    = liked != null,
+                        likesCount = _uiState.value.event?.likes_count ?: 0
+                    )
                 }
             } catch (_: Exception) {}
         }
     }
-    fun onToggleSaved() {
+
+    fun toggleSave() {
+        val current = _uiState.value.isSaved
+        // Optimistic update
+        _uiState.value = _uiState.value.copy(isSaved = !current)
         viewModelScope.launch {
             try {
                 val resp = apiService.toggleSaveEvent(currentEventId)
                 if (resp.isSuccessful) {
-                    val isSaved = resp.body()?.saved ?: false
-                    _uiState.value = _uiState.value.copy(isSaved = isSaved)
+                    _uiState.value = _uiState.value.copy(isSaved = resp.body()?.saved ?: !current)
+                } else {
+                    // Revert
+                    _uiState.value = _uiState.value.copy(isSaved = current)
                 }
-            } catch (e: Exception) {
-                savedStore.toggleSaved(currentEventId.toString())
+            } catch (_: Exception) {
+                // Revert
+                _uiState.value = _uiState.value.copy(isSaved = current)
+            }
+        }
+    }
+
+    fun toggleLike() {
+        val current      = _uiState.value.isLiked
+        val currentCount = _uiState.value.likesCount
+        // Optimistic update
+        _uiState.value = _uiState.value.copy(
+            isLiked    = !current,
+            likesCount = if (current) currentCount - 1 else currentCount + 1
+        )
+        viewModelScope.launch {
+            try {
+                val resp = apiService.toggleLikeEvent(currentEventId)
+                if (resp.isSuccessful) {
+                    _uiState.value = _uiState.value.copy(
+                        isLiked    = resp.body()?.liked ?: !current,
+                        likesCount = resp.body()?.likes_count ?: currentCount
+                    )
+                } else {
+                    // Revert
+                    _uiState.value = _uiState.value.copy(
+                        isLiked    = current,
+                        likesCount = currentCount
+                    )
+                }
+            } catch (_: Exception) {
+                // Revert
+                _uiState.value = _uiState.value.copy(
+                    isLiked    = current,
+                    likesCount = currentCount
+                )
             }
         }
     }
@@ -97,28 +133,28 @@ class ActivityDetailViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 if (userSession.isLoggedIn && slug.isNotBlank()) {
-
                     val response = apiService.getVolunteerEventDetail(slug)
                     if (response.isSuccessful && response.body() != null) {
-                        _uiState.value = _uiState.value.copy(event = response.body()!!.event)
+                        val event = response.body()!!.event
+                        _uiState.value = _uiState.value.copy(
+                            event      = event,
+                            likesCount = event.likes_count ?: 0
+                        )
                         checkRegistrationStatus(eventId)
                         return@launch
                     }
                 }
-
                 if (slug.isNotBlank()) {
                     val response = apiService.getPublicEventDetail(slug)
                     if (response.isSuccessful && response.body() != null) {
-                        _uiState.value = _uiState.value.copy(event = response.body()!!.event)
+                        val event = response.body()!!.event
+                        _uiState.value = _uiState.value.copy(
+                            event      = event,
+                            likesCount = event.likes_count ?: 0
+                        )
                         return@launch
                     }
                 }
-
-                android.util.Log.w(
-                    "ActivityDetailVM",
-                    "Tidak dapat fetch detail event id=$eventId slug=$slug"
-                )
-
             } catch (e: Exception) {
                 android.util.Log.e("ActivityDetailVM", "Error: ${e.message}")
             }
@@ -130,10 +166,8 @@ class ActivityDetailViewModel @Inject constructor(
             try {
                 val response = apiService.getVolunteerRegistrations()
                 if (response.isSuccessful && response.body() != null) {
-                    val registrations = response.body()!!.data
-                    val alreadyRegistered = registrations.any { reg ->
-                        reg.event?.id == eventId &&
-                                reg.status !in listOf("cancelled")
+                    val alreadyRegistered = response.body()!!.data.any { reg ->
+                        reg.event?.id == eventId && reg.status !in listOf("cancelled")
                     }
                     _uiState.value = _uiState.value.copy(isRegistered = alreadyRegistered)
                 }
@@ -145,22 +179,17 @@ class ActivityDetailViewModel @Inject constructor(
 
     fun onRegisterToEvent() {
         if (currentEventId <= 0 || _uiState.value.isProcessing) return
-
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isProcessing = true)
-
             try {
                 val response = apiService.registerToEvent(currentEventId)
-
                 if (response.isSuccessful) {
                     _uiState.value = _uiState.value.copy(
                         isRegistered    = true,
                         isProcessing    = false,
                         feedbackMessage = "Pendaftaran berhasil! Selamat bergabung."
                     )
-                    val currentSlug = _uiState.value.event?.slug ?: ""
-                    fetchEventDetail(currentEventId, currentSlug)
-
+                    fetchEventDetail(currentEventId, _uiState.value.event?.slug ?: "")
                 } else {
                     val errorMsg = when (response.code()) {
                         422  -> "Pendaftaran gagal: kuota penuh atau kamu sudah terdaftar."
@@ -172,7 +201,6 @@ class ActivityDetailViewModel @Inject constructor(
                         feedbackMessage = errorMsg
                     )
                 }
-
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isProcessing    = false,
@@ -184,29 +212,23 @@ class ActivityDetailViewModel @Inject constructor(
 
     fun onCancelRegistration() {
         if (currentEventId <= 0 || _uiState.value.isProcessing) return
-
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isProcessing = true)
-
             try {
                 val response = apiService.cancelRegistration(currentEventId)
-
                 if (response.isSuccessful) {
                     _uiState.value = _uiState.value.copy(
                         isRegistered    = false,
                         isProcessing    = false,
                         feedbackMessage = "Pendaftaran berhasil dibatalkan."
                     )
-                    val currentSlug = _uiState.value.event?.slug ?: ""
-                    fetchEventDetail(currentEventId, currentSlug)
-
+                    fetchEventDetail(currentEventId, _uiState.value.event?.slug ?: "")
                 } else {
                     _uiState.value = _uiState.value.copy(
                         isProcessing    = false,
                         feedbackMessage = "Pembatalan gagal (${response.code()})."
                     )
                 }
-
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isProcessing    = false,
@@ -215,6 +237,7 @@ class ActivityDetailViewModel @Inject constructor(
             }
         }
     }
+
     fun onFeedbackShown() {
         _uiState.value = _uiState.value.copy(feedbackMessage = null)
     }

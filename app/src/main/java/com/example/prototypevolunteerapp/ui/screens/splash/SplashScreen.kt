@@ -98,11 +98,21 @@ fun SplashScreen() {
 
             when (savedSession.role) {
                 SessionPreferences.ROLE_VOLUNTEER -> {
+                    val volunteerProfileDto = try {
+                        val profileResp = apiService.getVolunteerProfile()
+                        if (profileResp.isSuccessful) {
+                            profileResp.body()?.user?.volunteer_profile
+                        } else null
+                    } catch (e: Exception) {
+                        null
+                    }
+
                     userSession.restoreSession(
-                        email     = savedSession.email,
-                        name      = savedSession.name,
-                        volunteer = null,
-                        avatarUrl = savedSession.avatarUrl
+                        email               = savedSession.email,
+                        name                = savedSession.name,
+                        volunteer           = null,
+                        avatarUrl           = savedSession.avatarUrl,
+                        volunteerProfileDto = volunteerProfileDto
                     )
                     notificationRepo.initForUser(isDummyAccount = false)
 

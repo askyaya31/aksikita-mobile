@@ -5,14 +5,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -40,7 +44,6 @@ private enum class HistoryTab(val label: String, val status: String?) {
     CANCELLED( "Dibatalkan",  "cancelled")
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActivityHistoryScreen(
     viewModel: ActivityHistoryViewModel = hiltViewModel()
@@ -55,147 +58,185 @@ fun ActivityHistoryScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Riwayat Kegiatan", fontWeight = FontWeight.SemiBold, color = Color.White) },
-                navigationIcon = {
-                    IconButton(onClick = { backStack.removeLastOrNull() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = NavyDark)
-            )
-        },
         containerColor = BgScreen
     ) { innerPadding ->
-        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            if (!uiState.isLoading && uiState.errorMessage == null) {
-                ScrollableTabRow(
-                    selectedTabIndex    = activeTab.ordinal,
-                    containerColor      = Color.White,
-                    contentColor        = NavyDark,
-                    edgePadding         = 16.dp,
-                    divider             = { HorizontalDivider(color = Color(0xFFE2E8F0)) }
+        Column(modifier = Modifier.fillMaxSize()) {
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Brush.linearGradient(listOf(NavyDark, PrimaryBlue)))
+                    .padding(horizontal = 16.dp)
+                    .padding(
+                        top    = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 16.dp,
+                        bottom = 20.dp
+                    )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.15f))
+                        .clickable { backStack.removeLastOrNull() }
+                        .align(Alignment.CenterStart),
+                    contentAlignment = Alignment.Center
                 ) {
-                    HistoryTab.values().forEach { tab ->
-                        val count = if (tab == HistoryTab.ALL) {
-                            uiState.registrations.size
-                        } else {
-                            uiState.registrations.count { it.status == tab.status }
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Kembali",
+                        tint     = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Text(
+                    "Riwayat Kegiatan",
+                    color      = Color.White,
+                    fontSize   = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier   = Modifier.align(Alignment.Center)
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = innerPadding.calculateBottomPadding())
+            ) {
+                if (!uiState.isLoading && uiState.errorMessage == null) {
+                    ScrollableTabRow(
+                        selectedTabIndex = activeTab.ordinal,
+                        containerColor   = Color.White,
+                        contentColor     = NavyDark,
+                        edgePadding      = 16.dp,
+                        divider          = { HorizontalDivider(color = Color(0xFFE2E8F0)) },
+                        indicator        = { tabPositions ->
+                            TabRowDefaults.SecondaryIndicator(
+                                modifier = Modifier.tabIndicatorOffset(tabPositions[activeTab.ordinal]),
+                                color    = NavyDark
+                            )
                         }
-                        Tab(
-                            selected = activeTab == tab,
-                            onClick  = { activeTab = tab },
-                            text     = {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalAlignment     = Alignment.CenterVertically
-                                ) {
-                                    Text(tab.label, fontSize = 13.sp)
-                                    if (count > 0) {
-                                        Surface(
-                                            shape = RoundedCornerShape(99.dp),
-                                            color = if (activeTab == tab) NavyDark else Color(0xFFE2E8F0)
-                                        ) {
-                                            Text(
-                                                count.toString(),
-                                                modifier   = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                                fontSize   = 10.sp,
-                                                color      = if (activeTab == tab) Color.White else TextMuted,
-                                                fontWeight = FontWeight.Bold
-                                            )
+                    ) {
+                        HistoryTab.values().forEach { tab ->
+                            val count = if (tab == HistoryTab.ALL) {
+                                uiState.registrations.size
+                            } else {
+                                uiState.registrations.count { it.status == tab.status }
+                            }
+                            Tab(
+                                selected = activeTab == tab,
+                                onClick  = { activeTab = tab },
+                                text     = {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        verticalAlignment     = Alignment.CenterVertically
+                                    ) {
+                                        Text(tab.label, fontSize = 13.sp)
+                                        if (count > 0) {
+                                            Surface(
+                                                shape = RoundedCornerShape(99.dp),
+                                                color = if (activeTab == tab) NavyDark else Color(0xFFE2E8F0)
+                                            ) {
+                                                Text(
+                                                    count.toString(),
+                                                    modifier   = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                    fontSize   = 10.sp,
+                                                    color      = if (activeTab == tab) Color.White else TextMuted,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        )
-                    }
-                }
-            }
-
-            when {
-                uiState.isLoading -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        LoadingIndicator()
+                            )
+                        }
                     }
                 }
 
-                uiState.errorMessage != null -> {
-                    Column(
-                        modifier            = Modifier.fillMaxSize().padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(uiState.errorMessage!!, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-                        Spacer(Modifier.height(16.dp))
-                        Button(onClick = { viewModel.loadHistory() },
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                        ) { Text("Coba Lagi") }
+                when {
+                    uiState.isLoading -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            LoadingIndicator()
+                        }
                     }
-                }
 
-                filtered.isEmpty() -> {
-                    Column(
-                        modifier            = Modifier.fillMaxSize().padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Box(
-                            modifier         = Modifier
-                                .size(64.dp)
-                                .background(Color(0xFFEFF6FF), RoundedCornerShape(16.dp)),
-                            contentAlignment = Alignment.Center
+                    uiState.errorMessage != null -> {
+                        Column(
+                            modifier            = Modifier.fillMaxSize().padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            Icon(Icons.Default.EventBusy, null, tint = PrimaryBlue, modifier = Modifier.size(32.dp))
+                            Text(uiState.errorMessage!!, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+                            Spacer(Modifier.height(16.dp))
+                            Button(
+                                onClick = { viewModel.loadHistory() },
+                                colors  = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                            ) { Text("Coba Lagi") }
                         }
-                        Spacer(Modifier.height(16.dp))
-                        Text(
-                            if (activeTab == HistoryTab.ALL) "Belum ada riwayat kegiatan"
-                            else "Tidak ada kegiatan dengan status \"${activeTab.label}\"",
-                            fontWeight = FontWeight.SemiBold, fontSize = 15.sp,
-                            textAlign  = TextAlign.Center, color = TextDark
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            "Kegiatan yang sudah kamu ikuti akan muncul di sini.",
-                            style     = MaterialTheme.typography.bodyMedium,
-                            color     = TextMuted, textAlign = TextAlign.Center
-                        )
                     }
-                }
 
-                else -> {
-                    LazyColumn(
-                        modifier            = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding      = PaddingValues(top = 14.dp, bottom = 24.dp)
-                    ) {
-                        item {
+                    filtered.isEmpty() -> {
+                        Column(
+                            modifier            = Modifier.fillMaxSize().padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Box(
+                                modifier         = Modifier
+                                    .size(64.dp)
+                                    .background(Color(0xFFEFF6FF), RoundedCornerShape(16.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.EventBusy, null, tint = PrimaryBlue, modifier = Modifier.size(32.dp))
+                            }
+                            Spacer(Modifier.height(16.dp))
                             Text(
-                                "${filtered.size} kegiatan",
-                                fontSize = 12.sp, color = TextMuted,
-                                modifier = Modifier.padding(bottom = 4.dp)
+                                if (activeTab == HistoryTab.ALL) "Belum ada riwayat kegiatan"
+                                else "Tidak ada kegiatan dengan status \"${activeTab.label}\"",
+                                fontWeight = FontWeight.SemiBold, fontSize = 15.sp,
+                                textAlign  = TextAlign.Center, color = TextDark
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                "Kegiatan yang sudah kamu ikuti akan muncul di sini.",
+                                style     = MaterialTheme.typography.bodyMedium,
+                                color     = TextMuted, textAlign = TextAlign.Center
                             )
                         }
-                        items(filtered, key = { it.id }) { reg ->
-                            HistoryCard(
-                                registration = reg,
-                                onClick = {
-                                    val event = reg.event ?: return@HistoryCard
-                                    backStack.add(
-                                        Routes.ActivityDetailRoute(
-                                            id       = event.id.toString(),
-                                            slug     = event.slug ?: "",
-                                            title    = event.title,
-                                            location = "${event.city ?: ""}, ${event.province ?: ""}".trim(',',' '),
-                                            desc     = event.description ?: "",
-                                            imageRes = event.poster ?: ""
+                    }
+
+                    else -> {
+                        LazyColumn(
+                            modifier            = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            contentPadding      = PaddingValues(top = 14.dp, bottom = 24.dp)
+                        ) {
+                            item {
+                                Text(
+                                    "${filtered.size} kegiatan",
+                                    fontSize = 12.sp, color = TextMuted,
+                                    modifier = Modifier.padding(bottom = 4.dp)
+                                )
+                            }
+                            items(filtered, key = { it.id }) { reg ->
+                                HistoryCard(
+                                    registration = reg,
+                                    onClick = {
+                                        val event = reg.event ?: return@HistoryCard
+                                        backStack.add(
+                                            Routes.ActivityDetailRoute(
+                                                id       = event.id.toString(),
+                                                slug     = event.slug ?: "",
+                                                title    = event.title,
+                                                location = "${event.city ?: ""}, ${event.province ?: ""}".trim(',', ' '),
+                                                desc     = event.description ?: "",
+                                                imageRes = event.poster ?: ""
+                                            )
                                         )
-                                    )
-                                }
-                            )
+                                    }
+                                )
+                            }
+                            item { AppFooter() }
                         }
-                        item { AppFooter() }
                     }
                 }
             }
@@ -276,7 +317,7 @@ private fun HistoryCard(registration: RegistrationDto, onClick: () -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 Text(
                     "\"$it\"",
-                    fontSize = 11.sp, color = TextMuted,
+                    fontSize  = 11.sp, color = TextMuted,
                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                 )
             }

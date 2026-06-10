@@ -1,19 +1,25 @@
 package com.example.prototypevolunteerapp.ui.screens.saved
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -23,14 +29,16 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.prototypevolunteerapp.core.LocalBackStack
 import com.example.prototypevolunteerapp.core.Routes
-import com.example.prototypevolunteerapp.data.remote.dto.EventDto
 import com.example.prototypevolunteerapp.data.remote.dto.SavedEventDto
-import com.example.prototypevolunteerapp.ui.theme.OliveDark
-import com.example.prototypevolunteerapp.ui.theme.TextDark
-import com.example.prototypevolunteerapp.ui.theme.TextLight
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+private val NavyDark     = Color(0xFF1E3A8A)
+private val PrimaryBlue  = Color(0xFF3B82F6)
+private val BgScreen     = Color(0xFFF8FAFF)
+private val TextDark     = Color(0xFF0F172A)
+private val TextMuted    = Color(0xFF64748B)
+private val AccentOrange = Color(0xFFE8501A)
+
 @Composable
 fun SavedActivitiesScreen(
     viewModel: SavedActivitiesViewModel = hiltViewModel()
@@ -48,127 +56,155 @@ fun SavedActivitiesScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Kegiatan Tersimpan",
-                        fontWeight = FontWeight.Bold,
-                        fontSize   = 18.sp,
-                        color      = Color.White
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { backStack.removeLastOrNull() }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Kembali",
-                            tint               = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor             = Color(0xFF3D5C2A),
-                    titleContentColor          = Color.White,
-                    navigationIconContentColor = Color.White
-                )
-            )
-        },
         snackbarHost   = { SnackbarHost(snackbarHostState) },
-        containerColor = Color(0xFFF4F7EF)
+        containerColor = BgScreen
     ) { innerPadding ->
-
-        when {
-            uiState.isLoading -> {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Brush.linearGradient(listOf(NavyDark, PrimaryBlue)))
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 16.dp, bottom = 20.dp)
+            ) {
                 Box(
-                    modifier         = Modifier.fillMaxSize().padding(innerPadding),
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.15f))
+                        .clickable { backStack.removeLastOrNull() }
+                        .align(Alignment.CenterStart),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = OliveDark)
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Kembali",
+                        tint     = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
+                Text(
+                    "Saved",
+                    color      = Color.White,
+                    fontSize   = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier   = Modifier.align(Alignment.Center)
+                )
             }
 
-            uiState.errorMessage != null -> {
-                Box(
-                    modifier         = Modifier.fillMaxSize().padding(innerPadding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.WifiOff, null,
-                            tint     = Color.Gray,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        Text(uiState.errorMessage!!, color = Color.Gray, fontSize = 14.sp)
-                        Spacer(Modifier.height(16.dp))
-                        OutlinedButton(onClick = { viewModel.loadSavedEvents() }) {
-                            Text("Coba Lagi")
+            if (!uiState.isLoading && uiState.errorMessage == null) {
+                Text(
+                    text       = "${uiState.savedEvents.size} Opportunities Found",
+                    fontSize   = 13.sp,
+                    color      = TextMuted,
+                    fontWeight = FontWeight.Medium,
+                    modifier   = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                )
+            }
+
+            when {
+                uiState.isLoading -> {
+                    Box(
+                        modifier         = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) { CircularProgressIndicator(color = PrimaryBlue) }
+                }
+
+                uiState.errorMessage != null -> {
+                    Box(
+                        modifier         = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(Icons.Default.WifiOff, null,
+                                tint = Color(0xFFB0B0B0), modifier = Modifier.size(48.dp))
+                            Text(uiState.errorMessage!!, color = TextMuted, fontSize = 14.sp)
+                            Button(
+                                onClick = { viewModel.loadAll() },
+                                colors  = ButtonDefaults.buttonColors(containerColor = NavyDark)
+                            ) {
+                                Icon(Icons.Default.Refresh, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Coba Lagi")
+                            }
                         }
                     }
                 }
-            }
 
-            uiState.savedEvents.isEmpty() -> {
-                Box(
-                    modifier         = Modifier.fillMaxSize().padding(innerPadding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.BookmarkBorder, null,
-                            tint     = Color(0xFFB8D8C0),
-                            modifier = Modifier.size(72.dp)
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            "Belum ada kegiatan tersimpan",
-                            fontSize   = 15.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color      = TextDark
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            "Simpan kegiatan yang menarik dengan menekan ikon bookmark",
-                            fontSize  = 13.sp,
-                            color     = TextLight,
-                            textAlign = TextAlign.Center,
-                            modifier  = Modifier.padding(horizontal = 32.dp)
-                        )
+                uiState.savedEvents.isEmpty() -> {
+                    Box(
+                        modifier         = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier            = Modifier.padding(32.dp)
+                        ) {
+                            Icon(Icons.Default.BookmarkBorder, null,
+                                tint = Color(0xFFB0B0B0), modifier = Modifier.size(64.dp))
+                            Text(
+                                "Belum ada kegiatan tersimpan",
+                                fontSize   = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color      = TextDark
+                            )
+                            Text(
+                                "Simpan kegiatan yang menarik dengan menekan ikon bookmark",
+                                fontSize  = 13.sp,
+                                color     = TextMuted,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
-            }
 
-            else -> {
-                LazyColumn(
-                    modifier            = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentPadding      = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(
-                        items = uiState.savedEvents,
-                        key   = { it.id }
-                    ) { savedEvent ->
-                        SavedEventCard(
-                            saved        = savedEvent,
-                            onUnsave     = { viewModel.unsave(savedEvent.event_id) },
-                            onOpenDetail = { event ->
-                                backStack.add(
-                                    Routes.ActivityDetailRoute(
-                                        id       = event.id.toString(),
-                                        title    = event.title,
-                                        location = "${event.city ?: ""}, ${event.province ?: ""}".trim(',', ' '),
-                                        desc     = event.description ?: "",
-                                        imageRes = event.poster ?: "",
-                                        slug     = event.slug ?: ""
+                else -> {
+                    LazyColumn(
+                        modifier       = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            start  = 16.dp,
+                            end    = 16.dp,
+                            top    = 4.dp,
+                            bottom = 24.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(uiState.savedEvents, key = { it.id }) { saved ->
+                            SavedBigCard(
+                                saved   = saved,
+                                isLiked = uiState.likedIds.contains(saved.event_id),
+                                onLike  = { viewModel.toggleLike(saved.event_id) },
+                                onSave  = { viewModel.unsave(saved.event_id) },
+                                onClick = {
+                                    val event = saved.event ?: return@SavedBigCard
+                                    backStack.add(
+                                        Routes.ActivityDetailRoute(
+                                            id       = event.id.toString(),
+                                            slug     = event.slug ?: "",
+                                            title    = event.title,
+                                            location = buildString {
+                                                if (!event.location_name.isNullOrBlank()) append(event.location_name)
+                                                if (!event.city.isNullOrBlank()) {
+                                                    if (isNotEmpty()) append(", ")
+                                                    append(event.city)
+                                                }
+                                            }.ifBlank { "${event.city ?: ""}, ${event.province ?: ""}".trim(',', ' ') },
+                                            desc     = event.description ?: "",
+                                            imageRes = event.poster ?: ""
+                                        )
                                     )
-                                )
-                            }
-                        )
+                                }
+                            )
+                        }
                     }
-                    item { Spacer(Modifier.height(8.dp)) }
                 }
             }
         }
@@ -176,89 +212,204 @@ fun SavedActivitiesScreen(
 }
 
 @Composable
-private fun SavedEventCard(
-    saved:        SavedEventDto,
-    onUnsave:     () -> Unit,
-    onOpenDetail: (EventDto) -> Unit
+private fun SavedBigCard(
+    saved:   SavedEventDto,
+    isLiked: Boolean,
+    onLike:  () -> Unit,
+    onSave:  () -> Unit,
+    onClick: () -> Unit
 ) {
     val event = saved.event ?: return
+    val context    = LocalContext.current
+    val localResId = remember(event.poster) {
+        if (event.poster?.startsWith("http") == true) 0
+        else context.resources.getIdentifier(
+            event.poster ?: "", "drawable", context.packageName
+        )
+    }
 
     Card(
-        shape     = RoundedCornerShape(14.dp),
+        shape     = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(3.dp),
         colors    = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(2.dp),
-        onClick   = { onOpenDetail(event) },
-        modifier  = Modifier.fillMaxWidth()
+        modifier  = Modifier.fillMaxWidth().clickable { onClick() }
     ) {
-        Row(
-            modifier              = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment     = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model              = event.poster,
-                contentDescription = event.title,
-                contentScale       = ContentScale.Crop,
-                modifier           = Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(10.dp))
-            )
-
-            Column(
-                modifier            = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
             ) {
-                Text(
-                    text       = event.title,
-                    fontSize   = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color      = TextDark,
-                    maxLines   = 2,
-                    overflow   = TextOverflow.Ellipsis
+                AsyncImage(
+                    model              = if (localResId != 0) localResId
+                    else event.poster.takeIf { !it.isNullOrBlank() },
+                    contentDescription = event.title,
+                    contentScale       = ContentScale.Crop,
+                    modifier           = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                 )
-                Row(
-                    verticalAlignment    = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color.Transparent, Color.Black.copy(0.3f))
+                            )
+                        )
+                )
+                Box(
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .size(36.dp)
+                        .background(Color.White.copy(alpha = 0.9f), CircleShape)
+                        .clickable { onLike() }
+                        .align(Alignment.TopEnd),
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        Icons.Default.LocationOn, null,
-                        tint     = OliveDark,
-                        modifier = Modifier.size(12.dp)
-                    )
-                    Text(
-                        text     = "${event.city ?: "-"}, ${event.province ?: ""}".trim(',', ' '),
-                        fontSize = 11.sp,
-                        color    = TextLight,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        if (isLiked) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = "Like",
+                        tint     = if (isLiked) Color(0xFFE53935) else TextMuted,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
-                if (event.start_date != null) {
-                    Row(
-                        verticalAlignment    = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+
+                val categoryName = event.categories?.firstOrNull()?.name
+                if (!categoryName.isNullOrBlank()) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(10.dp),
+                        shape = RoundedCornerShape(99.dp),
+                        color = PrimaryBlue
                     ) {
-                        Icon(
-                            Icons.Default.CalendarMonth, null,
-                            tint     = OliveDark,
-                            modifier = Modifier.size(12.dp)
-                        )
                         Text(
-                            text     = event.start_date,
-                            fontSize = 11.sp,
-                            color    = TextLight
+                            categoryName,
+                            modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            fontSize   = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color      = Color.White
                         )
                     }
                 }
             }
-            IconButton(onClick = onUnsave) {
-                Icon(
-                    Icons.Default.Bookmark,
-                    contentDescription = "Hapus simpanan",
-                    tint               = OliveDark
-                )
+
+            Column(
+                modifier            = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment     = Alignment.Top
+                ) {
+                    Text(
+                        event.title,
+                        fontSize   = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color      = TextDark,
+                        maxLines   = 2,
+                        overflow   = TextOverflow.Ellipsis,
+                        modifier   = Modifier.weight(1f),
+                        lineHeight = 19.sp
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .background(PrimaryBlue.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                            .clickable { onSave() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Bookmark,
+                            contentDescription = "Unsave",
+                            tint     = PrimaryBlue,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                val orgName = event.organization?.organization_name
+                if (!orgName.isNullOrBlank()) {
+                    Text(orgName, fontSize = 12.sp,
+                        color = PrimaryBlue, fontWeight = FontWeight.Medium)
+                }
+
+                val location = buildString {
+                    if (!event.location_name.isNullOrBlank()) append(event.location_name)
+                    if (!event.city.isNullOrBlank()) {
+                        if (isNotEmpty()) append(", ")
+                        append(event.city)
+                    }
+                }.ifBlank { "${event.city ?: ""}, ${event.province ?: ""}".trim(',', ' ') }
+
+                if (location.isNotBlank()) {
+                    Row(
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(Icons.Default.LocationOn, null,
+                            tint = TextMuted, modifier = Modifier.size(13.dp))
+                        Text(location, fontSize = 11.sp, color = TextMuted,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+
+                if (event.start_date != null) {
+                    Row(
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(Icons.Default.Schedule, null,
+                            tint = TextMuted, modifier = Modifier.size(13.dp))
+                        Text(
+                            text = if (event.end_date != null && event.end_date != event.start_date)
+                                "${event.start_date} – ${event.end_date}"
+                            else event.start_date,
+                            fontSize = 11.sp, color = TextMuted
+                        )
+                    }
+                }
+
+                if (event.remaining_quota != null) {
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment     = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment     = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(Icons.Default.Group, null,
+                                tint = AccentOrange, modifier = Modifier.size(13.dp))
+                            Text(
+                                "${event.remaining_quota} spots left",
+                                fontSize   = 11.sp,
+                                color      = AccentOrange,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        Surface(
+                            shape    = RoundedCornerShape(99.dp),
+                            color    = NavyDark,
+                            modifier = Modifier.clickable { onClick() }
+                        ) {
+                            Text(
+                                "View Detail",
+                                modifier   = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                fontSize   = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color      = Color.White
+                            )
+                        }
+                    }
+                }
             }
         }
     }

@@ -157,7 +157,8 @@ data class OrgDto(
 data class CategoryDto(
     val id:   Int,
     val name: String,
-    val slug: String? = null
+    val slug: String? = null,
+    val color: String? = null
 )
 
 data class StoreEventRequest(

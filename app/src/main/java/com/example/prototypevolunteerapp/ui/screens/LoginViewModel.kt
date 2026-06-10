@@ -98,7 +98,8 @@ class LoginViewModel @Inject constructor(
                         email     = body.user.email,
                         name      = body.user.name,
                         volunteer = null,
-                        avatarUrl = avatarUrl
+                        avatarUrl = avatarUrl,
+                        volunteerProfileDto = body.user.volunteer_profile
                     )
                     sessionPrefs.saveVolunteerSession(
                         email     = body.user.email,
@@ -154,7 +155,8 @@ class LoginViewModel @Inject constructor(
                         email     = body.user.email,
                         name      = body.user.name,
                         volunteer = null,
-                        avatarUrl = body.user.avatar
+                        avatarUrl = body.user.avatar,
+                        body.user.volunteer_profile
                     )
                     sessionPrefs.saveVolunteerSession(
                         email     = body.user.email,
