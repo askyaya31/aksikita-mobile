@@ -42,9 +42,6 @@ import com.example.prototypevolunteerapp.R
 import com.example.prototypevolunteerapp.core.LocalBackStack
 import com.example.prototypevolunteerapp.core.Routes
 
-private val DarkGreen  = Color(0xFF3D5C2A)
-private val MidGreen   = Color(0xFF5A7A5A)
-private val LightGreen = Color(0xFF9EB589)
 private val InputBg    = Color(0x33FFFFFF)
 private val White      = Color.White
 private val HintColor  = Color(0xAAFFFFFF)
@@ -100,9 +97,9 @@ fun LoginScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(colors = listOf(
-                Color(0xFF5A7A5A),
-                Color(0xFF6E8F6E),
-                Color(0xE685A285)
+                Color(0xFF3E77D5),
+                Color(0xFF61A5FA),
+                Color(0xFFBFDCFE)
             )))
     ) {
         Column(
@@ -282,7 +279,7 @@ private fun RoleToggleButton(text: String, isSelected: Boolean, onClick: () -> U
         if (isSelected) Color.White else Color.Transparent,
         tween(200), label = "toggle_bg")
     val textColor by animateColorAsState(
-        if (isSelected) Color(0xFF3D5C2A) else Color.White.copy(alpha = 0.7f),
+        if (isSelected) Color(0xFF24408F) else Color.White.copy(alpha = 0.7f),
         tween(200), label = "toggle_text")
     Box(
         modifier = modifier

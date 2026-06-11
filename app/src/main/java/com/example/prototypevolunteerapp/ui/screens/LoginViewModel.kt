@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.prototypevolunteerapp.core.OrganizerSession
 import com.example.prototypevolunteerapp.core.UserSession
 import com.example.prototypevolunteerapp.data.model.NotificationRepository
-import com.example.prototypevolunteerapp.data.preferences.AccountDataStore
 import com.example.prototypevolunteerapp.data.preferences.SessionPreferences
 import com.example.prototypevolunteerapp.data.remote.ApiService
 import com.example.prototypevolunteerapp.data.remote.dto.GoogleLoginRequest
@@ -33,7 +32,6 @@ class LoginViewModel @Inject constructor(
     application:                  Application,
     private val apiService:       ApiService,
     private val sessionPrefs:     SessionPreferences,
-    private val accountDataStore: AccountDataStore,
     private val userSession:      UserSession,
     private val organizerSession: OrganizerSession,
     private val notifRepository:  NotificationRepository
@@ -57,7 +55,12 @@ class LoginViewModel @Inject constructor(
 
     fun onLogin() {
         val state = _uiState.value
-        if (state.email.isBlank() || state.password.isBlank()) return
+
+        // FIX: tampilkan error jika input kosong, jangan silent return
+        if (state.email.isBlank() || state.password.isBlank()) {
+            _uiState.update { it.copy(loginError = "Email dan password tidak boleh kosong.") }
+            return
+        }
 
         viewModelScope.launch {
             try {
@@ -90,10 +93,12 @@ class LoginViewModel @Inject constructor(
                     }
                     return@launch
                 }
+
                 sessionPrefs.saveAuthToken(body.token)
 
                 if (body.user.role == SessionPreferences.ROLE_VOLUNTEER) {
                     val avatarUrl = body.user.avatar
+                    // FIX: kembalikan volunteerProfileDto agar profile tidak kosong
                     userSession.restoreSession(
                         email     = body.user.email,
                         name      = body.user.name,
@@ -109,8 +114,9 @@ class LoginViewModel @Inject constructor(
                     notifRepository.initForUser(isDummyAccount = false)
                 } else {
                     organizerSession.restoreSession(
-                        email = body.user.email,
-                        name  = body.user.name
+                        email   = body.user.email,
+                        name    = body.user.name,
+                        logoUrl = body.user.avatar  // kirim logoUrl agar logo organizer ter-load
                     )
                     sessionPrefs.saveOrganizerSession(
                         email = body.user.email,
@@ -129,6 +135,7 @@ class LoginViewModel @Inject constructor(
             }
         }
     }
+
     fun onGoogleLogin(idToken: String) {
         viewModelScope.launch {
             try {
@@ -151,12 +158,13 @@ class LoginViewModel @Inject constructor(
                 sessionPrefs.saveAuthToken(body.token)
 
                 if (body.user.role == SessionPreferences.ROLE_VOLUNTEER) {
+                    // FIX: kembalikan volunteerProfileDto agar profile tidak kosong
                     userSession.restoreSession(
-                        email     = body.user.email,
-                        name      = body.user.name,
-                        volunteer = null,
-                        avatarUrl = body.user.avatar,
-                        body.user.volunteer_profile
+                        email               = body.user.email,
+                        name                = body.user.name,
+                        volunteer           = null,
+                        avatarUrl           = body.user.avatar,
+                        volunteerProfileDto = body.user.volunteer_profile
                     )
                     sessionPrefs.saveVolunteerSession(
                         email     = body.user.email,
@@ -164,6 +172,18 @@ class LoginViewModel @Inject constructor(
                         avatarUrl = body.user.avatar
                     )
                     notifRepository.initForUser(isDummyAccount = false)
+                } else {
+                    // FIX: tambahkan penanganan ORGANIZER yang sebelumnya tidak ada
+                    organizerSession.restoreSession(
+                        email   = body.user.email,
+                        name    = body.user.name,
+                        logoUrl = body.user.avatar
+                    )
+                    sessionPrefs.saveOrganizerSession(
+                        email = body.user.email,
+                        name  = body.user.name
+                    )
+                    notifRepository.clear()
                 }
 
                 _uiState.update { it.copy(isLoggedIn = true, loginError = "") }
@@ -176,6 +196,7 @@ class LoginViewModel @Inject constructor(
             }
         }
     }
+
     fun onLoginHandled() {
         _uiState.update { it.copy(isLoggedIn = false) }
     }

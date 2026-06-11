@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -144,7 +145,15 @@ fun SplashScreen() {
     Box(
         modifier         = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF4F7EF)),
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFFFFFFF),
+                        Color(0xFFE6F0FF),
+                        Color(0xFFCCE0FF)
+                    )
+                )
+            ),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -152,8 +161,8 @@ fun SplashScreen() {
             verticalArrangement = Arrangement.Center
         ) {
             Image(
-                painter            = painterResource(id = R.drawable.logo),
-                contentDescription = "AksiKita Logo",
+                painter            = painterResource(id = R.drawable.aksikitalogo),
+                contentDescription = "AksiKitalogo",
                 modifier           = Modifier
                     .size(260.dp)
                     .scale(logoScale)
@@ -170,7 +179,7 @@ fun SplashScreen() {
                     withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Kita") }
                 },
                 fontSize  = 19.sp,
-                color     = Color(0xFF6E8F6E),
+                color     = Color(0xFF24408F),
                 textAlign = TextAlign.Center,
                 modifier  = Modifier
                     .alpha(taglineAnim.value)

@@ -89,7 +89,7 @@ fun RegisterScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFF3D5C2A), Color(0xFF5A7A5A), Color(0xE685A285))
+                    colors = listOf(Color(0xFF3E77D5), Color(0xFF61A5FA), Color(0xFFBFDCFE))
                 )
             )
     ) {
@@ -107,7 +107,7 @@ fun RegisterScreen(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            Text("Buat Akun Baru", color = White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            Text("Be a Part of Us", color = White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
             Text("Bergabung dan mulai berkontribusi", color = White.copy(alpha = 0.8f), fontSize = 14.sp)
 
@@ -313,7 +313,7 @@ private fun RoleToggle(selected: RegisterRole, onSelect: (RegisterRole) -> Unit)
 @Composable
 private fun RoleButton(text: String, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier) {
     val bgColor   by animateColorAsState(if (isSelected) Color.White else Color.Transparent, tween(200), label = "rbg")
-    val textColor by animateColorAsState(if (isSelected) Color(0xFF3D5C2A) else Color.White.copy(alpha = 0.7f), tween(200), label = "rtxt")
+    val textColor by animateColorAsState(if (isSelected) Color(0xFF24408F) else Color.White.copy(alpha = 0.7f), tween(200), label = "rtxt")
     Box(
         modifier         = modifier.background(bgColor, RoundedCornerShape(50.dp)).clickable { onClick() }.padding(vertical = 10.dp),
         contentAlignment = Alignment.Center
