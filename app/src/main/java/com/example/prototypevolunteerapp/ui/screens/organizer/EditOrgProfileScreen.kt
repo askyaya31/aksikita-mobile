@@ -33,7 +33,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.prototypevolunteerapp.core.LocalBackStack
 
-// --- Palet Warna Biru ---
 private val BlueGradientStart = Color(0xFFBBE0FF)
 private val BlueGradientEnd   = Color(0xFFFFFFFF)
 private val PrimaryBlue       = Color(0xFF2865FF)
@@ -124,24 +123,21 @@ fun EditOrgProfileScreen(
                     .fillMaxSize()
                     .padding(padding)
                     .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp) // Spacing antar elemen LazyColumn
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // --- HEADER (Proporsional) ---
                 item(key = "header") {
                     Column(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp) // Spacing vertikal internal dipersempit agar proporsional
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Box Induk baru untuk menampung Foto + Kamera agar tidak saling potong
                         Box(modifier = Modifier.wrapContentSize()) {
-                            // Box Utama (Foto Profil - UKURAN DIUBAH MENJADI 80.DP agar lebih proporsional)
                             Box(
                                 modifier = Modifier
-                                    .size(80.dp) // Ukuran proporsional
+                                    .size(80.dp)
                                     .clip(CircleShape)
                                     .background(Color.White)
-                                    .border(2.dp, PrimaryBlue, CircleShape) // Border PrimaryBlue agar tegas
+                                    .border(2.dp, PrimaryBlue, CircleShape)
                                     .clickable { logoLauncher.launch("image/*") },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -166,31 +162,26 @@ fun EditOrgProfileScreen(
                                         Text(
                                             text = (profile.orgName.firstOrNull() ?: "O").toString().uppercase(),
                                             color = PrimaryBlue,
-                                            fontSize = 28.sp, // Ukuran font diturunkan sedikit menyesuaikan container
+                                            fontSize = 28.sp,
                                             fontWeight = FontWeight.Bold
                                         )
                                     }
                                 }
                             }
 
-                            // Box Ikon Kamera (UKURAN DIUBAH MENJADI 24.DP menyesuaikan foto 80.dp)
                             Box(
                                 modifier = Modifier
-                                    .size(24.dp) // Ukuran proporsional tombol kecil
+                                    .size(24.dp)
                                     .align(Alignment.BottomEnd)
-                                    // Gunakan offset untuk menggeser sumbu Y (naik) dan X (kiri/masuk)
-                                    // OFFSET DIHALUSKAN (dikurangi nilainya) agar pas di pojok elemen 80.dp
                                     .offset(x = (-3).dp, y = (-6).dp)
                                     .background(Color(0xFF1548C9), CircleShape)
                                     .border(2.dp, Color.White, CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
-                                // Ukuran ikon kamera juga disesuaikan agar tidak penuh
                                 Icon(Icons.Default.CameraAlt, null, tint = Color.White, modifier = Modifier.size(13.dp))
                             }
                         }
 
-                        // Warna font tetap PrimaryBlue agar kontras dengan background layar
                         Text("Tap foto untuk ganti logo", fontSize = 11.sp, color = PrimaryBlue)
 
                         if (profile.logoUri != null) {
@@ -203,7 +194,6 @@ fun EditOrgProfileScreen(
                     }
                 }
 
-                // --- SEKSI INFORMASI DASAR ---
                 item(key = "basic_info") {
                     SectionCard(title = "Informasi Dasar", icon = Icons.Default.Info) {
                         EditableFieldBox(
@@ -223,7 +213,6 @@ fun EditOrgProfileScreen(
                     }
                 }
 
-                // --- SEKSI KONTAK & LOKASI ---
                 item(key = "contact_info") {
                     SectionCard(title = "Kontak & Lokasi", icon = Icons.Default.ContactPhone) {
                         EditableFieldBox(
@@ -273,8 +262,6 @@ fun EditOrgProfileScreen(
         }
     }
 }
-
-// Komponen Desain Layer (Sudah standard proporsional)
 @Composable
 private fun SectionCard(
     title: String,
@@ -316,7 +303,6 @@ private fun SectionCard(
     }
 }
 
-// Input Field Kustom (Sudah standard proporsional)
 @Composable
 private fun EditableFieldBox(
     label: String,

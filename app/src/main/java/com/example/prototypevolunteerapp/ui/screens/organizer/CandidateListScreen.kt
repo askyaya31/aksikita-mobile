@@ -32,7 +32,6 @@ import com.example.prototypevolunteerapp.data.remote.dto.RegistrationDto
 import com.example.prototypevolunteerapp.ui.components.AppFooter
 import kotlinx.coroutines.launch
 
-// --- Palet Warna ---
 private val HeaderBgTop    = Color(0xFF86B8FF)
 private val HeaderBgMiddle = Color(0xFF5B9BD5)
 private val HeaderBgBottom = Color(0xFFCBE2FF)
@@ -46,7 +45,6 @@ private val AccentBlue     = Color(0xFF5B9BD5)
 private val PresentBlue    = Color(0xFF1A4D7A)
 private val CardBgLightBlue= Color(0xFFEAF2FF)
 
-// Status helpers
 private val StatusAccepted = Triple(Color(0xFF16A34A), Color(0xFFDCFCE7), "Diterima")
 private val StatusRejected = Triple(Color(0xFFDC2626), Color(0xFFFEE2E2), "Ditolak")
 private val StatusAttended = Triple(Color(0xFF1A4D7A), Color(0xFFDBEAFE), "Hadir")
@@ -56,10 +54,9 @@ private val StatusPending  = Triple(Color(0xFFB45309), Color(0xFFFEF3C7), "Pendi
 @Composable
 fun CandidateListScreen(
     eventId: Int? = null,
-    initialFilter: String = "Semua", // Menerima filter awal dari Dashboard
+    initialFilter: String = "Semua",
     viewModel: CandidateListViewModel = hiltViewModel()
 ) {
-    // Memuat data dengan menyertakan initialFilter
     LaunchedEffect(eventId, initialFilter) {
         viewModel.loadEvents(initialEventId = eventId, initialFilter = initialFilter)
     }
@@ -69,7 +66,6 @@ fun CandidateListScreen(
     val uiState      by viewModel.uiState.collectAsState()
     var accessDenied by remember { mutableStateOf(!viewModel.checkAccess()) }
 
-    // ── Dialog Akses Ditolak ──
     if (accessDenied) {
         AlertDialog(
             onDismissRequest = { backStack.removeLastOrNull() },
@@ -89,10 +85,10 @@ fun CandidateListScreen(
         )
     }
 
-    // ── Bottom Sheet Pilih Kegiatan ──
-    val sheetState        = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val showEventSheet    = uiState.showEventSheet
-    val selectedActivity  = if (uiState.selectedEvent == null) "Semua Kegiatan" else uiState.selectedEvent?.title ?: ""
+    val sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val showEventSheet   = uiState.showEventSheet
+    val selectedActivity = if (uiState.selectedEvent == null) "Semua Kegiatan"
+    else uiState.selectedEvent?.title ?: ""
 
     if (showEventSheet) {
         ModalBottomSheet(
@@ -125,7 +121,9 @@ fun CandidateListScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = if (isAllSelected) Color(0xFFDBEAFE) else BgColor),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isAllSelected) Color(0xFFDBEAFE) else BgColor
+                            ),
                             onClick = { viewModel.onEventSelected(null) }
                         ) {
                             Row(
@@ -134,7 +132,12 @@ fun CandidateListScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text("Semua Kegiatan", fontSize = 13.sp, color = if (isAllSelected) PresentBlue else TextDark, fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Normal)
+                                    Text(
+                                        "Semua Kegiatan",
+                                        fontSize = 13.sp,
+                                        color = if (isAllSelected) PresentBlue else TextDark,
+                                        fontWeight = if (isAllSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
                                     Text("Lihat pendaftar dari semua kegiatan", fontSize = 10.sp, color = TextMuted)
                                 }
                                 if (isAllSelected) Icon(Icons.Default.CheckCircle, null, tint = PresentBlue, modifier = Modifier.size(18.dp))
@@ -147,7 +150,9 @@ fun CandidateListScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = if (isSelected) Color(0xFFDBEAFE) else BgColor),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) Color(0xFFDBEAFE) else BgColor
+                            ),
                             onClick = { viewModel.onEventSelected(event) }
                         ) {
                             Row(
@@ -156,7 +161,12 @@ fun CandidateListScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(event.title, fontSize = 13.sp, color = if (isSelected) PresentBlue else TextDark, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal)
+                                    Text(
+                                        event.title,
+                                        fontSize = 13.sp,
+                                        color = if (isSelected) PresentBlue else TextDark,
+                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                                    )
                                     Text(event.status ?: "", fontSize = 10.sp, color = TextMuted)
                                 }
                                 if (isSelected) Icon(Icons.Default.CheckCircle, null, tint = PresentBlue, modifier = Modifier.size(18.dp))
@@ -215,7 +225,6 @@ fun CandidateListScreen(
                 contentPadding = PaddingValues(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                // ── Selector Kegiatan ──
                 item(key = "event_picker") {
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -229,16 +238,25 @@ fun CandidateListScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
                                 Icon(Icons.Default.Event, null, tint = AccentBlue, modifier = Modifier.size(18.dp))
-                                Text(selectedActivity.ifEmpty { "Pilih kegiatan" }, fontSize = 13.sp, color = TextDark, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(
+                                    selectedActivity.ifEmpty { "Pilih kegiatan" },
+                                    fontSize = 13.sp,
+                                    color = TextDark,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
                             Icon(Icons.Default.ExpandMore, null, tint = Color(0xFFAAAAAA), modifier = Modifier.size(20.dp))
                         }
                     }
                 }
 
-                // ── Summary Chips ──
                 item(key = "summary") {
                     val pending  = uiState.allRegistrations.count { it.status == "pending" }
                     val accepted = uiState.allRegistrations.count { it.status == "confirmed" }
@@ -247,13 +265,12 @@ fun CandidateListScreen(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        SummaryChip("Pending", pending, StatusPending.first, StatusPending.second, Modifier.weight(1f))
+                        SummaryChip("Pending",  pending,  StatusPending.first,  StatusPending.second,  Modifier.weight(1f))
                         SummaryChip("Diterima", accepted, StatusAccepted.first, StatusAccepted.second, Modifier.weight(1f))
-                        SummaryChip("Ditolak", rejected, StatusRejected.first, StatusRejected.second, Modifier.weight(1f))
+                        SummaryChip("Ditolak",  rejected, StatusRejected.first, StatusRejected.second, Modifier.weight(1f))
                     }
                 }
 
-                // ── Filter Row ──
                 item(key = "filter_row") {
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -265,8 +282,17 @@ fun CandidateListScreen(
                             FilterChip(
                                 selected = isActive,
                                 onClick  = { viewModel.onFilterSelected(filter) },
-                                label    = { Text(filter, fontSize = 12.sp, fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal) },
-                                colors = FilterChipDefaults.filterChipColors(selectedContainerColor = AccentBlue, selectedLabelColor = Color.White)
+                                label    = {
+                                    Text(
+                                        filter,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = AccentBlue,
+                                    selectedLabelColor = Color.White
+                                )
                             )
                         }
                     }
@@ -274,29 +300,33 @@ fun CandidateListScreen(
 
                 if (filteredCandidates.isEmpty()) {
                     item(key = "empty") {
-                        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 60.dp), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 60.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Icon(Icons.Default.PersonOff, null, tint = Color(0xFFBBBBBB), modifier = Modifier.size(56.dp))
                                 Spacer(Modifier.height(12.dp))
-                                Text(if (selectedFilter == "Semua") "Belum ada kandidat" else "Tidak ada kandidat \"$selectedFilter\"", color = Color(0xFFAAAAAA), fontSize = 14.sp, textAlign = TextAlign.Center)
+                                Text(
+                                    if (selectedFilter == "Semua") "Belum ada kandidat"
+                                    else "Tidak ada kandidat \"$selectedFilter\"",
+                                    color = Color(0xFFAAAAAA),
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         }
                     }
                 } else {
-                    // ── List Relawan ──
                     items(items = filteredCandidates, key = { it.id }) { reg ->
-                        // RESOLUSI AMAN: Mengubah reg.event_id menjadi reg.event?.id
-                        val dynamicEventTitle = reg.event?.title
-                            ?: uiState.selectedEvent?.title
-                            ?: uiState.events.find { it.id == reg.event?.id }?.title
-                            ?: "Nama Kegiatan"
+                        val eventTitle = reg.event?.title ?: "Nama Kegiatan"
 
                         VolunteerWaitingCard(
-                            reg = reg,
-                            eventTitle = dynamicEventTitle,
-                            onConfirm = { viewModel.onConfirmRegistration(reg.id) },
-                            onReject  = { viewModel.onRejectRegistration(reg.id) },
-                            onAttend  = { viewModel.onAttendRegistration(reg.id) }
+                            reg        = reg,
+                            eventTitle = eventTitle,
+                            onConfirm  = { viewModel.onConfirmRegistration(reg.id) },
+                            onReject   = { viewModel.onRejectRegistration(reg.id) },
+                            onAttend   = { viewModel.onAttendRegistration(reg.id) }
                         )
                     }
                 }
@@ -320,7 +350,6 @@ private fun VolunteerWaitingCard(
     val profile = user?.volunteer_profile
     var showDetail by remember { mutableStateOf(false) }
 
-    // ── Bottom Sheet Detail ──
     if (showDetail) {
         ModalBottomSheet(
             onDismissRequest = { showDetail = false },
@@ -336,12 +365,17 @@ private fun VolunteerWaitingCard(
                 HorizontalDivider(color = Color(0xFFEEEEEE))
 
                 val location = profile?.city ?: profile?.province ?: "-"
-                DetailRow(Icons.Default.LocationOn, "Asal Kota", location)
-                DetailRow(Icons.Default.Phone, "Telepon", user?.phone ?: "-")
-                DetailRow(Icons.Default.CalendarToday, "Tgl Lahir", profile?.date_of_birth ?: "-")
+                DetailRow(Icons.Default.LocationOn,   "Asal Kota", location)
+                DetailRow(Icons.Default.Phone,        "Telepon",   user?.phone ?: "-")
+                DetailRow(Icons.Default.CalendarToday,"Tgl Lahir", profile?.date_of_birth ?: "-")
 
                 if (!profile?.bio.isNullOrBlank()) {
-                    Column(modifier = Modifier.fillMaxWidth().background(BgColor, RoundedCornerShape(12.dp)).padding(14.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(BgColor, RoundedCornerShape(12.dp))
+                            .padding(14.dp)
+                    ) {
                         Text("Bio", fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.SemiBold)
                         Text(profile!!.bio!!, fontSize = 13.sp, color = TextDark)
                     }
@@ -350,7 +384,6 @@ private fun VolunteerWaitingCard(
         }
     }
 
-    // ── Kartu Minimalis Informasi 3 Baris ──
     Card(
         modifier  = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
         shape     = RoundedCornerShape(16.dp),
@@ -362,21 +395,33 @@ private fun VolunteerWaitingCard(
                 // ── Avatar ──
                 val avatarUrl = profile?.avatar ?: user?.avatar
                 Box(
-                    modifier = Modifier.size(56.dp).clip(CircleShape).background(Color.White).shadow(1.dp, CircleShape),
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .shadow(1.dp, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     if (!avatarUrl.isNullOrBlank()) {
-                        AsyncImage(model = avatarUrl, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape))
+                        AsyncImage(
+                            model = avatarUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize().clip(CircleShape)
+                        )
                     } else {
-                        Text(user?.name?.firstOrNull()?.uppercaseChar()?.toString() ?: "?", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = AccentBlue)
+                        Text(
+                            user?.name?.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AccentBlue
+                        )
                     }
                 }
 
                 Spacer(Modifier.width(16.dp))
 
-                // ── Info Utama Dinamis ──
                 Column(modifier = Modifier.weight(1f)) {
-                    // Baris 1: Nama Relawan
                     Text(
                         text = user?.name ?: "Volunteer",
                         fontSize = 15.sp,
@@ -387,9 +432,8 @@ private fun VolunteerWaitingCard(
                     )
                     Spacer(Modifier.height(4.dp))
 
-                    // Baris 2: Nama Kegiatan yang didaftari
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Event, contentDescription = null, tint = AccentBlue, modifier = Modifier.size(12.dp))
+                        Icon(Icons.Default.Event, null, tint = AccentBlue, modifier = Modifier.size(12.dp))
                         Spacer(Modifier.width(4.dp))
                         Text(
                             text = eventTitle,
@@ -402,15 +446,12 @@ private fun VolunteerWaitingCard(
                     }
                     Spacer(Modifier.height(2.dp))
 
-                    // Baris 3: Informasi Asal Kota / Institusi
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.School, contentDescription = null, tint = TextMuted, modifier = Modifier.size(12.dp))
+                        Icon(Icons.Default.School, null, tint = TextMuted, modifier = Modifier.size(12.dp))
                         Spacer(Modifier.width(4.dp))
-                        val originInfo = profile?.city ?: "Asal Daerah / Institusi Kosong"
                         Text(
-                            text = originInfo,
+                            text = profile?.city ?: "Asal Daerah / Institusi Kosong",
                             fontSize = 11.sp,
-                            fontWeight = FontWeight.Normal,
                             color = TextMuted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -418,7 +459,6 @@ private fun VolunteerWaitingCard(
                     }
                 }
 
-                // ── Icon Detail Minimalis ──
                 IconButton(
                     onClick = { showDetail = true },
                     modifier = Modifier.size(32.dp).background(AccentBlue.copy(alpha = 0.1f), CircleShape)
@@ -429,19 +469,22 @@ private fun VolunteerWaitingCard(
 
             Spacer(Modifier.height(16.dp))
 
-            // ── Bawah: Status Badge & Tombol Aksi ──
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Status Badge
                 val (sc, sb, st) = statusMeta(reg.status)
                 Surface(shape = RoundedCornerShape(8.dp), color = sb) {
-                    Text(st, fontSize = 11.sp, color = sc, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
+                    Text(
+                        st,
+                        fontSize = 11.sp,
+                        color = sc,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
                 }
 
-                // Tombol Aksi
                 Row(horizontalArrangement = Arrangement.End) {
                     when (reg.status) {
                         "pending" -> {
@@ -490,7 +533,11 @@ private fun statusMeta(status: String): Triple<Color, Color, String> = when (sta
 
 @Composable
 private fun DetailRow(icon: ImageVector, label: String, value: String) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
         Icon(icon, null, tint = AccentBlue, modifier = Modifier.size(16.dp))
         Column {
             Text(label, fontSize = 10.sp, color = TextMuted)
@@ -501,7 +548,12 @@ private fun DetailRow(icon: ImageVector, label: String, value: String) {
 
 @Composable
 private fun SummaryChip(label: String, count: Int, textColor: Color, bgColor: Color, modifier: Modifier) {
-    Box(modifier = modifier.background(bgColor, RoundedCornerShape(10.dp)).padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+    Box(
+        modifier = modifier
+            .background(bgColor, RoundedCornerShape(10.dp))
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("$count", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = textColor)
             Text(label, fontSize = 11.sp, color = textColor)

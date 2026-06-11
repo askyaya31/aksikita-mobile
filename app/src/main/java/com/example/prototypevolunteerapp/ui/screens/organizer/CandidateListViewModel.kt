@@ -52,16 +52,14 @@ class CandidateListViewModel @Inject constructor(
 
                 val events = resp.body()?.data ?: emptyList()
 
-                // LOGIKA BARU: Penanganan sinyal -1 dari Dashboard
                 val startEvent = when (initialEventId) {
-                    -1   -> null // Sinyal pasti untuk "Semua Kegiatan"
-                    null -> events.firstOrNull() // Jika user manual buka tab Candidate
-                    else -> events.find { it.id == initialEventId } // Jika buka kegiatan spesifik
+                    -1   -> null                              // Sinyal "Semua Kegiatan" dari Dashboard
+                    null -> events.firstOrNull()              // Buka manual via tab Candidate
+                    else -> events.find { it.id == initialEventId } // Buka kegiatan spesifik
                 }
 
                 _uiState.value = _uiState.value.copy(events = events, isLoading = false)
 
-                // Teruskan initialFilter saat load data pendaftar
                 loadRegistrations(startEvent, initialFilter)
 
             } catch (e: Exception) {
@@ -77,24 +75,38 @@ class CandidateListViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, selectedEvent = event)
             try {
+                // KEY FIX: Setiap registrasi di-inject dengan event-nya sendiri.
+                // Ini memastikan user yang daftar banyak event tidak akan nabrak —
+                // masing-masing reg.id unik dan reg.event sudah pasti benar.
                 val combinedRegistrations = mutableListOf<RegistrationDto>()
 
                 if (event != null) {
+                    // Mode: satu kegiatan spesifik
                     val resp = apiService.getEventRegistrations(eventId = event.id)
                     if (resp.isSuccessful) {
-                        combinedRegistrations.addAll(resp.body()?.data ?: emptyList())
+                        val regs = (resp.body()?.data ?: emptyList()).map { reg ->
+                            // Inject event object jika API tidak mengembalikannya
+                            if (reg.event == null) reg.copy(event = event) else reg
+                        }
+                        combinedRegistrations.addAll(regs)
                     }
                 } else {
+                    // Mode: semua kegiatan — loop per event agar mapping pasti benar
                     val allEvents = _uiState.value.events
                     allEvents.forEach { e ->
                         val resp = apiService.getEventRegistrations(eventId = e.id)
                         if (resp.isSuccessful) {
-                            combinedRegistrations.addAll(resp.body()?.data ?: emptyList())
+                            val regs = (resp.body()?.data ?: emptyList()).map { reg ->
+                                // Inject event object — krusial untuk user yang ikut banyak event
+                                if (reg.event == null) reg.copy(event = e) else reg
+                            }
+                            combinedRegistrations.addAll(regs)
                         }
                     }
                 }
 
-                val currentFilter = if (_uiState.value.selectedFilter == "Semua") initialFilter else _uiState.value.selectedFilter
+                val currentFilter = if (_uiState.value.selectedFilter == "Semua") initialFilter
+                else _uiState.value.selectedFilter
 
                 _uiState.value = _uiState.value.copy(
                     allRegistrations      = combinedRegistrations,
@@ -113,7 +125,7 @@ class CandidateListViewModel @Inject constructor(
 
     fun onEventSelected(event: EventDto?) {
         _uiState.value = _uiState.value.copy(showEventSheet = false)
-        loadRegistrations(event, "Semua") // Reset filter jika user ganti kegiatan manual
+        loadRegistrations(event, "Semua") // Reset filter saat ganti kegiatan manual
     }
 
     fun onFilterSelected(filter: String) {
@@ -183,7 +195,7 @@ class CandidateListViewModel @Inject constructor(
     }
 
     private fun refreshCurrentRegistrations() {
-        val event = _uiState.value.selectedEvent
+        val event         = _uiState.value.selectedEvent
         val currentFilter = _uiState.value.selectedFilter
         loadRegistrations(event, currentFilter)
     }

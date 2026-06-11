@@ -28,7 +28,6 @@ import coil.compose.AsyncImage
 import com.example.prototypevolunteerapp.core.LocalBackStack
 import com.example.prototypevolunteerapp.ui.components.FormField
 
-// ── Colour tokens (blue theme, sesuai prototype) ──────────────────────────────
 private val BgColor      = Color(0xFFF0F4FF)   // light blue-tinted background
 private val CardWhite    = Color(0xFFFFFFFF)
 private val AccentBlue   = Color(0xFF1D4ED8)   // primary blue (buttons, icons)
@@ -60,7 +59,6 @@ fun EditActivityScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showAccessDenied by remember { mutableStateOf(!viewModel.hasAccess) }
 
-    // ── Access denied dialog ──────────────────────────────────────────────────
     if (showAccessDenied) {
         AlertDialog(
             onDismissRequest = { backStack.removeLastOrNull() },
@@ -74,7 +72,6 @@ fun EditActivityScreen(
         )
     }
 
-    // ── Not found state ───────────────────────────────────────────────────────
     if (form.notFound) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -92,7 +89,6 @@ fun EditActivityScreen(
         return
     }
 
-    // ── Loading state ─────────────────────────────────────────────────────────
     if (form.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = AccentBlue)
@@ -100,7 +96,6 @@ fun EditActivityScreen(
         return
     }
 
-    // ── Delete confirmation dialog ────────────────────────────────────────────
     if (form.showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.onDeleteDialogDismiss() },
@@ -136,7 +131,6 @@ fun EditActivityScreen(
         )
     }
 
-    // ── Submit success dialog ─────────────────────────────────────────────────
     if (form.showSubmitSuccessDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.onSubmitSuccessDialogDismissed() },
@@ -164,7 +158,6 @@ fun EditActivityScreen(
         )
     }
 
-    // ── Status bottom sheet ───────────────────────────────────────────────────
     if (form.showStatusSheet) {
         ModalBottomSheet(
             onDismissRequest = { viewModel.onStatusSheetDismiss() },
@@ -216,7 +209,7 @@ fun EditActivityScreen(
                         isSelected     = false,
                         onClick        = {
                             viewModel.onStatusSheetDismiss()
-                            viewModel.onCompleteEvent() // Menjalankan aksi penyelesaian event
+                            viewModel.onCompleteEvent()
                         }
                     )
                 }
@@ -230,7 +223,7 @@ fun EditActivityScreen(
                         isSelected     = false,
                         onClick        = {
                             viewModel.onStatusSheetDismiss()
-                            viewModel.onCancelEvent() // Menjalankan aksi pembatalan event
+                            viewModel.onCancelEvent()
                         }
                     )
                 }
@@ -245,7 +238,6 @@ fun EditActivityScreen(
         }
     }
 
-    // ── Preview bottom sheet ──────────────────────────────────────────────────
     if (form.showPreviewSheet) {
         ModalBottomSheet(
             onDismissRequest = { viewModel.onPreviewDismissed() },
@@ -300,7 +292,6 @@ fun EditActivityScreen(
                         color = stColor, fontWeight = FontWeight.SemiBold)
                 }
 
-                // Description
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Row(
                         verticalAlignment     = Alignment.CenterVertically,
@@ -369,7 +360,6 @@ fun EditActivityScreen(
         }
     }
 
-    // ── Snackbar ──────────────────────────────────────────────────────────────
     val snackbarHost = remember { SnackbarHostState() }
     LaunchedEffect(form.successMessage) {
         form.successMessage?.let {
@@ -388,7 +378,6 @@ fun EditActivityScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? -> viewModel.onPosterSelected(uri) }
 
-    // ── Scaffold ──────────────────────────────────────────────────────────────
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHost) },
         topBar = {
@@ -448,7 +437,6 @@ fun EditActivityScreen(
                 contentPadding      = PaddingValues(bottom = 32.dp, top = 12.dp)
             ) {
 
-                // ── Poster card ───────────────────────────────────────────────
                 item(key = "poster_card") {
                     OutlinedCard(
                         modifier  = Modifier.fillMaxWidth(),
@@ -792,8 +780,6 @@ fun EditActivityScreen(
                         }
                     }
                 }
-
-                // ── Primary CTA: Preview & Submit ─────────────────────────────
                 item(key = "save_btn") {
                     Button(
                         onClick  = { viewModel.onPreviewRequested() },
@@ -810,7 +796,6 @@ fun EditActivityScreen(
                     }
                 }
 
-                // ── Submit to review (draft / rejected only) ──────────────────
                 item(key = "submit_btn") {
                     if (form.statusFromApi == "draft" || form.statusFromApi == "rejected") {
                         OutlinedButton(
@@ -832,7 +817,6 @@ fun EditActivityScreen(
     }
 }
 
-// ── StatusOptionButton ────────────────────────────────────────────────────────
 @Composable
 private fun StatusOptionButton(
     icon:           ImageVector,
@@ -868,7 +852,6 @@ private fun StatusOptionButton(
     }
 }
 
-// ── EditPreviewRow ────────────────────────────────────────────────────────────
 @Composable
 private fun EditPreviewRow(
     icon:  ImageVector,

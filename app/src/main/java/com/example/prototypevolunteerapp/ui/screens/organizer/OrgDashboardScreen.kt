@@ -20,11 +20,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier // Baris krusial penangkal 67 error
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -35,15 +32,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.ui.layout.ContentScale
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.example.prototypevolunteerapp.core.LocalBackStack
 import com.example.prototypevolunteerapp.core.Routes
 import com.example.prototypevolunteerapp.ui.components.AppFooter
 import com.example.prototypevolunteerapp.data.preferences.SessionPreferences
 import kotlinx.coroutines.launch
 
-// ── Colour tokens ─────────────────────────────────────────────────────────────
 private val BgColor        = Color(0xFFF5F7FF)
 private val HeaderBgTop    = Color(0xFF86B8FF)
 private val HeaderBgMiddle = Color(0xFF5B9BD5)
@@ -61,8 +58,6 @@ private val StatusAcceptedText = Color(0xFF16A34A)
 private val StatusAcceptedBg   = Color(0xFFDCFCE7)
 private val StatusRejectedText = Color(0xFFDC2626)
 private val StatusRejectedBg    = Color(0xFFFEE2E2)
-
-// Token warna tambahan untuk status Selesai
 private val StatusCompletedText = Color(0xFF059669)
 private val StatusCompletedBg   = Color(0xFFD1FAE5)
 
@@ -92,7 +87,6 @@ fun OrgDashboardScreen(
     val showStatsSheet   = uiState.showStatsSheet
     val selectedTab      = uiState.selectedTab
 
-    // ── Logout dialog ─────────────────────────────────────────────────────────
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.onLogoutDialogDismiss() },
@@ -141,13 +135,11 @@ fun OrgDashboardScreen(
         )
     }
 
-    // ── Stats bottom sheet — bar chart total pendaftar per kegiatan ───────────
     if (showStatsSheet) {
         val totalAll      = events.sumOf { it.registered_count ?: 0 }
         val maxCount      = events.maxOfOrNull { it.registered_count ?: 0 }.let { if ((it ?: 0) < 1) 1 else it!! }
             .let { if ((it ?: 0) < 1) 1 else it!! }
 
-        // Trigger animasi bar setelah sheet terbuka
         var barsVisible by remember { mutableStateOf(false) }
         LaunchedEffect(Unit) { barsVisible = true }
 
@@ -169,7 +161,6 @@ fun OrgDashboardScreen(
             ) {
                 Spacer(Modifier.height(4.dp))
 
-                // Header
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier         = Modifier
@@ -203,7 +194,6 @@ fun OrgDashboardScreen(
                         color      = TextPrimary)
                 }
 
-                // ── Horizontal bar chart ──────────────────────────────────────
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                     modifier            = Modifier.heightIn(max = 340.dp)
@@ -212,7 +202,6 @@ fun OrgDashboardScreen(
                         val count = event.registered_count ?: 0
                         val ratio = count.toFloat() / maxCount.toFloat()
 
-                        // Animasi fill bar
                         val animatedRatio by animateFloatAsState(
                             targetValue    = if (barsVisible) ratio else 0f,
                             animationSpec  = tween(durationMillis = 600),
@@ -220,7 +209,6 @@ fun OrgDashboardScreen(
                         )
 
                         Column(modifier = Modifier.fillMaxWidth()) {
-                            // Label baris: judul + angka
                             Row(
                                 modifier              = Modifier
                                     .fillMaxWidth()
@@ -246,7 +234,6 @@ fun OrgDashboardScreen(
                                 )
                             }
 
-                            // Track + fill
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -272,7 +259,6 @@ fun OrgDashboardScreen(
         }
     }
 
-    // ── Cancel event dialog ───────────────────────────────────────────────────
     val cancelTargetId by viewModel.cancelTargetId.collectAsState()
     val cancelSuccess  by viewModel.cancelSuccess.collectAsState()
     LaunchedEffect(cancelSuccess) {
@@ -315,7 +301,6 @@ fun OrgDashboardScreen(
         )
     }
 
-    // ── Scaffold ──────────────────────────────────────────────────────────────
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar       = {},
@@ -357,7 +342,6 @@ fun OrgDashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
 
-                // ── Header welcome ────────────────────────────────────────────
                 item(key = "top_header") {
                     Box(modifier = Modifier
                         .fillMaxWidth()
@@ -411,7 +395,6 @@ fun OrgDashboardScreen(
                     }
                 }
 
-                // ── Single stat card: Activity Pending ────────────────────────
                 item(key = "stat_cards") {
                     val pendingCount = viewModel.pendingCount()
                     Box(
@@ -463,7 +446,6 @@ fun OrgDashboardScreen(
                     }
                 }
 
-                // ── Section header kegiatan ───────────────────────────────────
                 item(key = "activities_section_header") {
                     Spacer(Modifier.height(8.dp))
                     Row(
@@ -480,14 +462,13 @@ fun OrgDashboardScreen(
                     }
                 }
 
-                // ── Status filter chips ───────────────────────────────────────
                 item(key = "event_status_filter") {
                     val statusFilter by remember { derivedStateOf { uiState.selectedEventStatus } }
                     val statusOptions = listOf(
                         null             to "Semua",
                         "published"      to "Aktif",
                         "pending_review" to "Pending",
-                        "completed"      to "Selesai", // Hanya ditambahkan ke list pilihan
+                        "completed"      to "Selesai",
                         "draft"          to "Draft",
                         "cancelled"      to "Dibatalkan"
                     )
@@ -498,7 +479,6 @@ fun OrgDashboardScreen(
                     )
                 }
 
-                // ── Event cards ───────────────────────────────────────────────
                 items(items = uiState.filteredEvents, key = { "event_${it.id}" }) { event ->
                     val candidateCount = viewModel.candidateCountFor(event.id)
                     AnimatedVisibility(
@@ -518,20 +498,31 @@ fun OrgDashboardScreen(
                             elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                         ) {
                             Row(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
-                                Box(
-                                    modifier         = Modifier
-                                        .size(72.dp)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(
-                                            Brush.linearGradient(
-                                                listOf(HeaderBgBottom.copy(alpha = 0.7f), AddButtonColor)
-                                            )
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(Icons.Default.Event, null,
-                                        tint     = Color.White,
-                                        modifier = Modifier.size(32.dp))
+                                if (!event.poster.isNullOrBlank()) {
+                                    AsyncImage(
+                                        model = event.poster,
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .size(72.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(72.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(
+                                                Brush.linearGradient(
+                                                    listOf(HeaderBgBottom.copy(alpha = 0.7f), AddButtonColor)
+                                                )
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Default.Event, null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(32.dp))
+                                    }
                                 }
                                 Spacer(Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
@@ -540,7 +531,7 @@ fun OrgDashboardScreen(
                                         "pending_review" -> Triple(StatusPendingText,  StatusPendingBg,  "Pending")
                                         "cancelled"      -> Triple(StatusRejectedText, StatusRejectedBg, "Dibatalkan")
                                         "draft"          -> Triple(Color(0xFF37474F),  Color(0xFFECEFF1), "Draft")
-                                        "completed"      -> Triple(StatusCompletedText, StatusCompletedBg, "Selesai") // Hanya disisipkan di sini
+                                        "completed"      -> Triple(StatusCompletedText, StatusCompletedBg, "Selesai")
                                         else             -> Triple(TextSecondary, Color(0xFFF0F0F0), event.status ?: "")
                                     }
                                     Surface(shape = RoundedCornerShape(20.dp), color = badgeBg) {
@@ -597,7 +588,6 @@ fun OrgDashboardScreen(
                                             modifier = Modifier.size(16.dp))
                                     }
 
-                                    // Selesai Skenario: Tombol Selesaikan Event (Icons.Default.Done) jika status aktif
                                     if (event.status == "published") {
                                         Spacer(Modifier.height(4.dp))
                                         IconButton(
@@ -633,8 +623,6 @@ fun OrgDashboardScreen(
         }
     }
 }
-
-// ── Helper composables ────────────────────────────────────────────────────────
 
 @Composable
 private fun MiniLabel(text: String, color: Color) {

@@ -26,7 +26,6 @@ import coil.compose.AsyncImage
 import com.example.prototypevolunteerapp.core.LocalBackStack
 import com.example.prototypevolunteerapp.core.Routes
 
-// --- Palet Warna Baru Berdasarkan Prototype ---
 private val BlueGradientStart = Color(0xFFBBE0FF) // Latar belakang atas
 private val BlueGradientEnd   = Color(0xFFFFFFFF) // Latar belakang bawah
 private val PrimaryBlue       = Color(0xFF2865FF) // Kartu header
@@ -44,14 +43,13 @@ fun OrgProfileScreen(
 
     LaunchedEffect(Unit) { viewModel.loadProfile() }
 
-    // Membungkus Scaffold dengan Box untuk mendapatkan gradien latar belakang full screen
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(BlueGradientStart, BlueGradientEnd)))
     ) {
         Scaffold(
-            containerColor = Color.Transparent, // Harus transparan agar gradien Box terlihat
+            containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
                     title = {
@@ -124,7 +122,7 @@ fun OrgProfileScreen(
 
 @Composable
 private fun ProfileHeaderCard(
-    profile: OrgProfileState, // Sesuaikan dengan nama state aktual Anda
+    profile: OrgProfileState,
     onEditClick: () -> Unit
 ) {
     Card(
@@ -134,7 +132,7 @@ private fun ProfileHeaderCard(
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(20.dp))
     ) {
-        // Box pembungkus utama dihilangkan karena kita mengatur posisi melalui Row dan Column
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -175,7 +173,6 @@ private fun ProfileHeaderCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Info Teks (Menggunakan weight agar memenuhi sisa layar ke kanan)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = profile.orgName.ifBlank { "Aksi Solo Satu" },
@@ -190,13 +187,11 @@ private fun ProfileHeaderCard(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // ROW BARU: Menyandingkan Badge dan Tombol Edit
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween, // Mendorong kiri-kanan
-                    verticalAlignment = Alignment.CenterVertically    // Memastikan sejajar secara presisi
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Badge Verifikasi
                     val verifLabel = if (profile.verificationStatus == "verified") "Organisasi Terverifikasi" else "Belum Terverifikasi"
                     Surface(
                         shape = RoundedCornerShape(50.dp),
@@ -209,12 +204,10 @@ private fun ProfileHeaderCard(
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         )
                     }
-
-                    // Tombol Edit Profile
                     Surface(
                         onClick = onEditClick,
                         shape = RoundedCornerShape(50.dp),
-                        color = Color(0xFF1548C9) // Biru lebih gelap untuk tombol
+                        color = Color(0xFF1548C9)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -241,7 +234,6 @@ private fun ProfileHeaderCard(
     }
 }
 
-// Analisis Logika: Membangun kartu ber-layer (overlapping)
 @Composable
 private fun SectionCard(
     title: String,
@@ -249,11 +241,10 @@ private fun SectionCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
-        // Kartu Putih Utama (Diberi margin atas agar kapsul biru bisa menonjol di atasnya)
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 18.dp) // Margin atas kritikal
+                .padding(top = 18.dp)
                 .shadow(2.dp, RoundedCornerShape(16.dp)),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
@@ -261,19 +252,18 @@ private fun SectionCard(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 24.dp), // Padding dalam disesuaikan
+                    .padding(horizontal = 16.dp, vertical = 24.dp),
                 content = content
             )
         }
 
-        // Kapsul Biru Header (Diletakkan melayang di TopCenter)
         Surface(
             shape = RoundedCornerShape(50.dp),
-            color = Color(0xFF5A94FF), // Biru agak terang
+            color = Color(0xFF5A94FF),
             shadowElevation = 3.dp,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .fillMaxWidth(0.95f) // Supaya tidak terlalu rapat ke ujung layar
+                .fillMaxWidth(0.95f)
         ) {
             Row(
                 modifier = Modifier
@@ -289,7 +279,6 @@ private fun SectionCard(
     }
 }
 
-// Komponen Reusable untuk field tanpa ikon di dalamnya
 @Composable
 private fun DataFieldBox(label: String, value: String) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -306,7 +295,6 @@ private fun DataFieldBox(label: String, value: String) {
     }
 }
 
-// Komponen Reusable untuk field dengan ikon (Bagian Kontak)
 @Composable
 private fun DataFieldBoxWithIcon(label: String, icon: ImageVector, value: String) {
     Column(modifier = Modifier.fillMaxWidth()) {
