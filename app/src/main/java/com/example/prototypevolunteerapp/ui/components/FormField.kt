@@ -20,7 +20,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val AccentGreen = Color(0xFF5A7A5A)
+private val AccentBlue   = Color(0xFF1D4ED8)
+private val AccentBlueLt = Color(0xFF3B82F6)
+private val BorderBlue   = Color(0xFFBFDBFE)
+
 @Composable
 fun FormField(
     label: String,
@@ -34,27 +37,30 @@ fun FormField(
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment     = Alignment.CenterVertically
         ) {
-            Icon(icon, contentDescription = null, tint = AccentGreen, modifier = Modifier.size(16.dp))
+            Icon(icon,
+                contentDescription = null,
+                tint               = AccentBlueLt,
+                modifier           = Modifier.size(16.dp))
             Text(
-                text = label,
-                fontSize = 13.sp,
+                text       = label,
+                fontSize   = 13.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFF1E2D1E)
+                color      = Color(0xFF1E293B)
             )
         }
         OutlinedTextField(
-            value = value,
+            value         = value,
             onValueChange = onValueChange,
-            placeholder = { Text(placeholder, fontSize = 13.sp) },
-            singleLine = true,
-            isError = isError,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(10.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = AccentGreen,
-                unfocusedBorderColor = Color(0xFFDAEFDC)
+            placeholder   = { Text(placeholder, fontSize = 13.sp) },
+            singleLine    = true,
+            isError       = isError,
+            modifier      = Modifier.fillMaxWidth(),
+            shape         = RoundedCornerShape(10.dp),
+            colors        = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor   = AccentBlue,
+                unfocusedBorderColor = BorderBlue
             )
         )
         if (isError) {

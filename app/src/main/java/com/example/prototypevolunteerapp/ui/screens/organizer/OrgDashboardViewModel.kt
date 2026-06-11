@@ -3,7 +3,6 @@ package com.example.prototypevolunteerapp.ui.screens.organizer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.prototypevolunteerapp.core.OrganizerSession
-import com.example.prototypevolunteerapp.data.model.ActivityData
 import com.example.prototypevolunteerapp.data.model.NotificationRepository
 import com.example.prototypevolunteerapp.data.preferences.SessionPreferences
 import com.example.prototypevolunteerapp.data.remote.ApiService
@@ -19,8 +18,7 @@ import javax.inject.Inject
 enum class OrgTab { DASHBOARD, KANDIDAT, TAMBAH, STATISTIK, PROFIL }
 
 data class OrgDashboardUiState(
-    val events:              List<EventDto>     = emptyList(),
-    val existingActivities:  List<ActivityData> = emptyList(),
+    val events:              List<EventDto> = emptyList(),
     val totalActivities:     Int     = 0,
     val totalCandidates:     Int     = 0,
     val totalSubmissions:    Int     = 0,
@@ -48,6 +46,7 @@ class OrgDashboardViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(OrgDashboardUiState())
     val uiState: StateFlow<OrgDashboardUiState> = _uiState.asStateFlow()
+
     private val _cancelTargetId = MutableStateFlow<Int?>(null)
     val cancelTargetId: StateFlow<Int?> = _cancelTargetId.asStateFlow()
 
@@ -76,15 +75,14 @@ class OrgDashboardViewModel @Inject constructor(
                 try {
                     val profileResp = apiService.getOrgProfile()
                     if (profileResp.isSuccessful && profileResp.body() != null) {
-                        val profile = profileResp.body()!!.organization
-                        val logoUrl = profile.logo
-                        organizerSession.updateLogoUrl(logoUrl)
+                        organizerSession.updateLogoUrl(profileResp.body()!!.organization.logo)
                     }
                 } catch (e: Exception) {
-                    android.util.Log.w("OrgDashboardVM", "Gagal fetch profil org: ${e.message}")
+                    android.util.Log.w("OrgDashboardVM", "Gagal fetch profil: ${e.message}")
                 }
 
-                val resp = apiService.getOrgEvents()
+                val resp = apiService.getOrgEvents(status = null)
+
                 if (resp.isSuccessful) {
                     val events = resp.body()?.data ?: emptyList()
                     _uiState.value = _uiState.value.copy(
@@ -157,9 +155,7 @@ class OrgDashboardViewModel @Inject constructor(
     }
 
     fun pendingCount(): Int =
-        _uiState.value.events.sumOf { event ->
-            if (event.status == "published") event.registered_count ?: 0 else 0
-        }
+        _uiState.value.events.count { it.status == "pending_review" }
 
     fun acceptedCount(): Int =
         _uiState.value.events.count { it.status == "published" || it.status == "completed" }
@@ -173,13 +169,8 @@ class OrgDashboardViewModel @Inject constructor(
     fun candidateCountFor(title: String): Int =
         _uiState.value.events.find { it.title == title }?.registered_count ?: 0
 
-    fun onCancelEventRequest(eventId: Int) {
-        _cancelTargetId.value = eventId
-    }
-
-    fun onCancelEventDismiss() {
-        _cancelTargetId.value = null
-    }
+    fun onCancelEventRequest(eventId: Int) { _cancelTargetId.value = eventId }
+    fun onCancelEventDismiss() { _cancelTargetId.value = null }
 
     fun onCancelEventConfirmed(reason: String?) {
         val eventId = _cancelTargetId.value ?: return
@@ -189,13 +180,12 @@ class OrgDashboardViewModel @Inject constructor(
                 val resp = apiService.cancelOrgEvent(eventId, body)
                 if (resp.isSuccessful) {
                     _cancelSuccess.value = "Kegiatan berhasil dibatalkan."
-
                     val updated = _uiState.value.events.map { ev ->
                         if (ev.id == eventId) ev.copy(status = "cancelled") else ev
                     }
                     _uiState.value = _uiState.value.copy(events = updated)
                 } else {
-                    _cancelSuccess.value = "Gagal membatalkan (${resp.code()})"
+                    _cancelSuccess.value = "Gagal mematalkan (${resp.code()})"
                 }
             } catch (e: Exception) {
                 _cancelSuccess.value = "Koneksi gagal: ${e.localizedMessage}"
@@ -205,7 +195,24 @@ class OrgDashboardViewModel @Inject constructor(
         }
     }
 
-    fun onCancelSuccessHandled() {
-        _cancelSuccess.value = null
+    fun onCompleteEvent(eventId: Int) {
+        viewModelScope.launch {
+            try {
+                val resp = apiService.completeOrgEvent(eventId)
+                if (resp.isSuccessful) {
+                    _cancelSuccess.value = "Kegiatan telah selesai dilaksanakan."
+                    val updated = _uiState.value.events.map { ev ->
+                        if (ev.id == eventId) ev.copy(status = "completed") else ev
+                    }
+                    _uiState.value = _uiState.value.copy(events = updated)
+                } else {
+                    _cancelSuccess.value = "Gagal menyelesaikan kegiatan (${resp.code()})"
+                }
+            } catch (e: Exception) {
+                _cancelSuccess.value = "Koneksi gagal: ${e.localizedMessage}"
+            }
+        }
     }
+
+    fun onCancelSuccessHandled() { _cancelSuccess.value = null }
 }

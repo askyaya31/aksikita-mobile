@@ -55,7 +55,7 @@ object Routes {
     data object AddActivityRoute : NavKey
 
     @Serializable
-    data class CandidateListRoute(val eventId: Int? = null) : NavKey
+    data class CandidateListRoute(val eventId: Int? = null, val initialFilter: String = "Semua") : NavKey
 
     @Serializable
     data class CandidateDetailRoute(
