@@ -62,6 +62,7 @@ class UserSession @Inject constructor(){
             true
         } else false
     }
+
     fun restoreSession(
         email:               String,
         name:                String,
@@ -70,7 +71,8 @@ class UserSession @Inject constructor(){
         volunteerProfileDto: VolunteerProfileDto? = null
     ) {
         currentUser = User(name = name, email = email, avatarUrl = avatarUrl)
-        
+        this.volunteerProfileDto = volunteerProfileDto
+
         if (volunteer != null) {
             currentVolunteerProfile = volunteer
         } else if (volunteerProfileDto != null) {
@@ -90,19 +92,11 @@ class UserSession @Inject constructor(){
         } else {
             currentVolunteerProfile = dummyVolunteerMap[email]
         }
-        email:     String,
-        name:      String,
-        volunteer: Volunteer?,
-        avatarUrl: String? = null,
-        volunteerProfileDto: VolunteerProfileDto? = null
-    ) {
-        currentUser = User(name = name, email = email, avatarUrl = avatarUrl)
-        currentVolunteerProfile = volunteer ?: dummyVolunteerMap[email]
-        this.volunteerProfileDto = volunteerProfileDto
     }
 
     fun logout() {
         currentUser = null
         currentVolunteerProfile = null
+        volunteerProfileDto = null
     }
 }

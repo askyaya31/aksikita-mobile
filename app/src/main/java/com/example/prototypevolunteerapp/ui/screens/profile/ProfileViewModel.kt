@@ -1,5 +1,6 @@
 package com.example.prototypevolunteerapp.ui.screens.profile
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.prototypevolunteerapp.core.AppConfig
@@ -141,12 +142,7 @@ class ProfileViewModel @Inject constructor(
                 .replace("localhost", "10.0.2.2")
         }
     }
-    private fun buildAvatarUrl(path: String): String {
-        if (path.startsWith("http")) return path
-            .replace("localhost", "10.0.2.2")
-        val base = AppConfig.BASE_URL.trimEnd('/')
-        return "$base/storage/$path"
-    }
+
     fun loadActivityStats() {
         viewModelScope.launch {
             try {
@@ -168,22 +164,28 @@ class ProfileViewModel @Inject constructor(
             } catch (_: Exception) {}
         }
     }
+
     fun onLogout() {
         viewModelScope.launch {
-            try { apiService.logout() } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            try {
+                apiService.logout()
+            } catch (e: Exception) {
                 android.util.Log.w("ProfileViewModel", "Server logout gagal: ${e.message}")
             }
 
             sessionPreferences.clearSession()
             volunteerDataStore.clearProfile()
+            notificationRepository.clear()
+
             userSession.logout()
             organizerSession.logout()
-            notificationRepository.clear()
 
             _uiState.value = _uiState.value.copy(
                 isLoggedIn         = false,
                 shouldNavigateBack = true,
-                isLogoutAction     = true
+                isLogoutAction     = true,
+                isLoading          = false
             )
         }
     }
