@@ -30,15 +30,19 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.prototypevolunteerapp.core.LocalBackStack
 import com.example.prototypevolunteerapp.core.Routes
-import com.example.prototypevolunteerapp.ui.theme.TextDark
 
-private val HeaderStart   = Color(0xFF3D5C2A)
-private val HeaderEnd     = Color(0xFF5A7A5A)
-private val BgColor       = Color(0xFFF4F7EF)
-private val CardWhite     = Color(0xFFFFFFFF)
-private val AccentGreen   = Color(0xFF5A7A5A)
-private val TextPrimary   = Color(0xFF1E2D1E)
-private val TextSecondary = Color(0xFF6E8F6E)
+
+private val HeaderStart    = Color(0xFF2B5CE6)
+private val HeaderEnd      = Color(0xFF5B8DEF)
+private val BgColor        = Color(0xFFEEF3FF)
+private val CardWhite      = Color(0xFFFFFFFF)
+private val AccentBlue     = Color(0xFF3D7BF5)
+private val TextPrimary    = Color(0xFF1A1F36)
+private val TextSecondary  = Color(0xFF6B7280)
+private val ChipBlue       = Color(0xFFDDE8FF)
+private val ChipBlueText   = Color(0xFF1A3A8F)
+private val AccentGreen    = AccentBlue
+private val ChipGreen      = ChipBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +51,7 @@ fun ProfileScreen(
 ) {
     val backStack = LocalBackStack.current
     val uiState   by viewModel.uiState.collectAsState()
+    var showLogoutDialog by remember { mutableStateOf(false)}
 
     LaunchedEffect(uiState.shouldNavigateBack) {
         if (uiState.shouldNavigateBack) {
@@ -62,24 +67,87 @@ fun ProfileScreen(
 
     if (!uiState.isLoggedIn && !uiState.shouldNavigateBack) return
 
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            containerColor   = CardWhite,
+            shape            = RoundedCornerShape(20.dp),
+            icon             = {
+                Box(
+                    modifier         = Modifier
+                        .size(48.dp)
+                        .background(Color(0xFFDDE8FF), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Logout,
+                        contentDescription = null,
+                        tint               = AccentBlue,
+                        modifier           = Modifier.size(24.dp)
+                    )
+                }
+            },
+            title = {
+                Text(
+                    "Keluar dari Akun?",
+                    fontWeight = FontWeight.Bold,
+                    fontSize   = 16.sp,
+                    color      = TextPrimary
+                )
+            },
+            text = {
+                Text(
+                    "Kamu akan keluar dari AksiKita. Yakin ingin melanjutkan?",
+                    fontSize   = 13.sp,
+                    color      = TextSecondary,
+                    lineHeight = 20.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLogoutDialog = false
+                        viewModel.onLogout()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
+                    shape  = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Ya, Keluar", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = { showLogoutDialog = false },
+                    shape   = RoundedCornerShape(12.dp),
+                    colors  = ButtonDefaults.outlinedButtonColors(contentColor = AccentBlue),
+                    border  = androidx.compose.foundation.BorderStroke(1.dp, AccentBlue),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Batal", fontSize = 13.sp)
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Profil Saya", fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp, color = Color.White)
+                    Text(
+                        "Profile Account",
+                        fontWeight = FontWeight.Bold,
+                        fontSize   = 17.sp,
+                        color      = Color.White
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = { backStack.removeLastOrNull() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back",
-                            tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
                     }
                 },
                 actions = {
-                    IconButton(onClick = { backStack.add(Routes.EditProfileRoute) }) {
-                        Icon(Icons.Default.Edit, "Edit Profil", tint = Color.White)
-                    }
-                    IconButton(onClick = { viewModel.onLogout() }) {
+                    IconButton(onClick = { showLogoutDialog = true }) {
                         Icon(Icons.Default.Logout, "Logout", tint = Color(0xFFFFCDD2))
                     }
                 },
@@ -90,9 +158,13 @@ fun ProfileScreen(
     ) { innerPadding ->
 
         if (uiState.isLoading) {
-            Box(Modifier.fillMaxSize().padding(innerPadding),
-                contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = AccentGreen)
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = AccentBlue)
             }
             return@Scaffold
         }
@@ -107,21 +179,21 @@ fun ProfileScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Brush.verticalGradient(listOf(HeaderStart, HeaderEnd)))
-                    .padding(bottom = 32.dp)
+                    .padding(bottom = 16.dp)
             ) {
                 Column(
                     modifier            = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                        .padding(horizontal = 24.dp, vertical = 14.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(96.dp)
-                            .shadow(6.dp, CircleShape)
+                            .size(72.dp)
+                            .shadow(4.dp, CircleShape)
                             .clip(CircleShape)
-                            .background(Color(0xFFDAEFDC)),
+                            .background(ChipGreen),
                         contentAlignment = Alignment.Center
                     ) {
                         if (!uiState.avatarUrl.isNullOrBlank()) {
@@ -139,125 +211,128 @@ fun ProfileScreen(
                             )
                         } else {
                             Text(
-                                text       = uiState.userName
-                                    .firstOrNull()
-                                    ?.uppercaseChar()
-                                    ?.toString() ?: "?",
-                                fontSize   = 36.sp,
+                                text       = uiState.userName.firstOrNull()
+                                    ?.uppercaseChar()?.toString() ?: "?",
+                                fontSize   = 28.sp,
                                 fontWeight = FontWeight.Bold,
                                 color      = AccentGreen
                             )
                         }
                     }
 
-                    Text(uiState.userName,
-                        fontSize   = 20.sp,
+                    // Nama
+                    Text(
+                        uiState.userName,
+                        fontSize   = 17.sp,
                         fontWeight = FontWeight.Bold,
-                        color      = Color.White)
+                        color      = Color.White
+                    )
 
-                    Row(verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Default.Email, null,
-                            tint = Color(0xFF9EB589), modifier = Modifier.size(13.dp))
-                        Text(uiState.userEmail, fontSize = 12.sp, color = Color(0xFF9EB589))
+                    // Email
+                    Row(
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Email, null,
+                            tint     = Color(0xFFB3CFFF),
+                            modifier = Modifier.size(11.dp)
+                        )
+                        Text(uiState.userEmail, fontSize = 11.sp, color = Color(0xFFB3CFFF))
                     }
+
+                    // Lokasi
                     if (!uiState.locationLabel.isNullOrBlank()) {
-                        Row(verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Icon(Icons.Default.LocationOn, null,
-                                tint = Color(0xFF9EB589), modifier = Modifier.size(13.dp))
-                            Text(uiState.locationLabel!!, fontSize = 12.sp,
-                                color = Color(0xFF9EB589))
+                        Row(
+                            verticalAlignment     = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.LocationOn, null,
+                                tint     = Color(0xFFB3CFFF),
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Text(
+                                uiState.locationLabel!!,
+                                fontSize = 11.sp,
+                                color    = Color(0xFFB3CFFF)
+                            )
                         }
                     }
 
+                    // Badge gender
                     if (!uiState.genderLabel.isNullOrBlank()) {
                         Surface(
                             shape = RoundedCornerShape(20.dp),
                             color = Color.White.copy(alpha = 0.15f)
                         ) {
-                            Text(uiState.genderLabel!!,
-                                fontSize = 11.sp, color = Color.White,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+                            Text(
+                                uiState.genderLabel!!,
+                                fontSize = 10.sp,
+                                color    = Color.White,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                            )
                         }
                     }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    // Tombol Edit Profile
+                    OutlinedButton(
+                        onClick = { backStack.add(Routes.EditProfileRoute) },
+                        shape  = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp, Color.White.copy(alpha = 0.6f)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)
                     ) {
-                        StatCard(Modifier.weight(1f), "Diikuti",  uiState.totalEventsJoined.toString(), Icons.Default.CheckCircle)
-                        StatCard(Modifier.weight(1f), "Pending",  uiState.pendingRegistrations.toString(), Icons.Default.HourglassEmpty)
-                        StatCard(Modifier.weight(1f), "Tersimpan", uiState.savedCount.toString(), Icons.Default.Bookmark)
+                        Icon(
+                            Icons.Default.Edit, null,
+                            modifier = Modifier.size(11.dp),
+                            tint     = Color.White
+                        )
+                        Spacer(Modifier.width(5.dp))
+                        Text("Edit Profile", fontSize = 11.sp, color = Color.White)
                     }
                 }
             }
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .offset(y = (-20).dp)
+                    .offset(y = (-16).dp)
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
 
+                // Peringatan profil kosong
                 if (!uiState.hasProfile) {
                     ProfileCard(title = "Lengkapi Profil Kamu") {
                         Text(
-                            "Profil kamu masih kosong. Klik ikon edit di atas untuk mengisi data diri.",
-                            fontSize   = 14.sp,
+                            "Profil kamu masih kosong. Klik Edit Profile untuk mengisi data diri.",
+                            fontSize   = 13.sp,
                             color      = TextSecondary,
-                            lineHeight = 21.sp
+                            lineHeight = 20.sp
                         )
                     }
                 }
 
-                if (uiState.totalEventsJoined != null) {
-                    ProfileCard(title = "Rekam Jejak") {
-                        Row(
-                            modifier              = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(
-                                    uiState.totalEventsJoined.toString(),
-                                    fontSize   = 28.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color      = AccentGreen
-                                )
-                                Text("Kegiatan Diikuti",
-                                    fontSize = 12.sp, color = TextSecondary)
-                            }
-                        }
+                // About Me
+                if (!uiState.bio.isNullOrBlank()) {
+                    LabeledCard(label = "About Me") {
+                        Text(
+                            uiState.bio!!,
+                            fontSize   = 12.sp,
+                            color      = TextPrimary,
+                            lineHeight = 19.sp
+                        )
                     }
                 }
 
-                if (!uiState.bio.isNullOrBlank()) {
-                    ProfileCard(title = "Tentang Saya") {
-                        Text(uiState.bio!!,
-                            fontSize   = 14.sp,
-                            color      = TextDark,
-                            lineHeight = 21.sp)
-                    }
-                }
-                ProfileCard(title = "Kontak") {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        if (!uiState.userPhone.isNullOrBlank()) {
-                            InfoRow(Icons.Default.Phone,
-                                "WhatsApp", uiState.userPhone!!)
-                        }
-                        InfoRow(Icons.Default.Email, "Email", uiState.userEmail)
-                        if (!uiState.dateOfBirth.isNullOrBlank()) {
-                            InfoRow(Icons.Default.Cake,
-                                "Tanggal Lahir", uiState.dateOfBirth!!)
-                        }
-                        if (!uiState.locationLabel.isNullOrBlank()) {
-                            InfoRow(Icons.Default.LocationOn,
-                                "Kota", uiState.locationLabel!!)
-                        }
-                    }
-                }
+                // Skills
                 if (uiState.skills.isNotEmpty()) {
-                    ProfileCard(title = "Keahlian") {
+                    LabeledCard(label = "Skills") {
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement   = Arrangement.spacedBy(8.dp)
@@ -265,73 +340,178 @@ fun ProfileScreen(
                             uiState.skills.forEach { skill ->
                                 Box(
                                     modifier = Modifier
-                                        .background(Color(0xFFDAEFDC),
-                                            RoundedCornerShape(50.dp))
+                                        .background(ChipBlue, RoundedCornerShape(50.dp))
                                         .padding(horizontal = 14.dp, vertical = 6.dp)
                                 ) {
-                                    Text(skill, fontSize = 12.sp,
-                                        color      = AccentGreen,
-                                        fontWeight = FontWeight.Medium)
+                                    Text(
+                                        skill,
+                                        fontSize   = 10.sp,
+                                        color      = ChipBlueText,
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 }
                             }
                         }
                     }
                 }
 
+                // Interests
                 if (uiState.interests.isNotEmpty()) {
-                    ProfileCard(title = "Minat") {
+                    LabeledCard(label = "Interests") {
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement   = Arrangement.spacedBy(8.dp)
                         ) {
                             uiState.interests.forEach { interest ->
+                                // Disamain biru seperti Skills (sebelumnya ChipYellow)
                                 Box(
                                     modifier = Modifier
-                                        .background(Color(0xFFFFF3CD),
-                                            RoundedCornerShape(50.dp))
+                                        .background(ChipBlue, RoundedCornerShape(50.dp))
                                         .padding(horizontal = 14.dp, vertical = 6.dp)
                                 ) {
-                                    Text(interest, fontSize = 12.sp,
-                                        color      = Color(0xFF7A5C00),
-                                        fontWeight = FontWeight.Medium)
+                                    Text(
+                                        interest,
+                                        fontSize   = 10.sp,
+                                        color      = ChipBlueText,   // sebelumnya ChipYellowText
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 }
                             }
                         }
                     }
                 }
-                ProfileCard(title = "Aktivitas Saya") {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        ProfileMenuRow(
-                            icon    = Icons.Default.Bookmark,
-                            label   = "Kegiatan Tersimpan",
-                            onClick = { backStack.add(Routes.SavedActivitiesRoute) }
-                        )
-                        HorizontalDivider(color = Color(0xFFF0F0F0))
+
+                // Contacts
+                LabeledCard(label = "Contacts") {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (!uiState.userPhone.isNullOrBlank()) {
+                            InfoRow(Icons.Default.Phone, "WhatsApp", uiState.userPhone!!)
+                        }
+                        InfoRow(Icons.Default.Email, "Email", uiState.userEmail)
+                        if (!uiState.dateOfBirth.isNullOrBlank()) {
+                            InfoRow(Icons.Default.Cake, "Tanggal Lahir", uiState.dateOfBirth!!)
+                        }
+                        if (!uiState.locationLabel.isNullOrBlank()) {
+                            InfoRow(Icons.Default.LocationOn, "Kota", uiState.locationLabel!!)
+                        }
+                    }
+                }
+
+                Card(
+                    modifier  = Modifier.fillMaxWidth(),
+                    shape     = RoundedCornerShape(16.dp),
+                    colors    = CardDefaults.cardColors(containerColor = CardWhite),
+                    elevation = CardDefaults.cardElevation(1.dp)
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
                         ProfileMenuRow(
                             icon    = Icons.Default.Favorite,
-                            label   = "Kegiatan Disukai",
+                            label   = "Favorites",
                             onClick = { backStack.add(Routes.LikedActivitiesRoute) }
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color    = Color(0xFFEEF3FF)
+                        )
+                        ProfileMenuRow(
+                            icon    = Icons.Default.Bookmark,
+                            label   = "Saved Activities",
+                            onClick = { backStack.add(Routes.SavedActivitiesRoute) }
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color    = Color(0xFFEEF3FF)
+                        )
+                        ProfileMenuRow(
+                            icon    = Icons.Default.History,
+                            label   = "My Activities",
+                            onClick = { backStack.add(Routes.ActivityHistoryRoute) }
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color    = Color(0xFFEEF3FF)
+                        )
+                        ProfileMenuRow(
+                            icon    = Icons.Default.HelpOutline,
+                            label   = "Help / FAQ",
+                            onClick = {
+                                // TODO: Buka User Manual AksiKita //
+                                // Opsi 1 link ke PDF di assets via FileProvider Intent
+                                // Opsi 2 buka URL dokumen
+                                // Opsi 3 navigate ke HelpScreen statis dalam app
+                            }
                         )
                     }
                 }
+
+                // Error message
                 if (!uiState.errorMessage.isNullOrBlank()) {
                     Row(
                         verticalAlignment     = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         modifier              = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFFFFF3CD), RoundedCornerShape(10.dp))
+                            .background(Color(0xFFDDE8FF), RoundedCornerShape(10.dp))
                             .padding(10.dp)
                     ) {
-                        Icon(Icons.Default.Info, null,
-                            tint = Color(0xFF7A5C00), modifier = Modifier.size(14.dp))
-                        Text(uiState.errorMessage!!,
-                            fontSize = 12.sp, color = Color(0xFF7A5C00))
+                        Icon(
+                            Icons.Default.Info, null,
+                            tint     = ChipBlueText,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            uiState.errorMessage!!,
+                            fontSize = 12.sp,
+                            color    = ChipBlueText
+                        )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
+        }
+    }
+}
+
+
+@Composable
+private fun LabeledCard(
+    label:   String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Card(
+            modifier  = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp),
+            shape     = RoundedCornerShape(16.dp),
+            colors    = CardDefaults.cardColors(containerColor = CardWhite),
+            elevation = CardDefaults.cardElevation(1.dp)
+        ) {
+            Column(
+                modifier            = Modifier.padding(
+                    start  = 16.dp,
+                    end    = 16.dp,
+                    top    = 20.dp,
+                    bottom = 16.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                content()
+            }
+        }
+        Box(
+            modifier = Modifier
+                .padding(start = 16.dp)
+                .background(AccentBlue, RoundedCornerShape(50.dp))
+                .padding(horizontal = 14.dp, vertical = 5.dp)
+        ) {
+            Text(
+                label,
+                fontSize   = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color      = Color.White
+            )
         }
     }
 }
@@ -351,11 +531,13 @@ private fun ProfileCard(
             modifier            = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(title,
+            Text(
+                title,
                 fontSize      = 12.sp,
                 fontWeight    = FontWeight.SemiBold,
                 color         = TextSecondary,
-                letterSpacing = 0.5.sp)
+                letterSpacing = 0.5.sp
+            )
             content()
         }
     }
@@ -369,16 +551,15 @@ private fun InfoRow(icon: ImageVector, label: String, value: String) {
     ) {
         Box(
             modifier         = Modifier
-                .size(36.dp)
-                .background(Color(0xFFDAEFDC), CircleShape),
+                .size(32.dp)
+                .background(ChipBlue, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, null, tint = AccentGreen, modifier = Modifier.size(18.dp))
+            Icon(icon, null, tint = AccentBlue, modifier = Modifier.size(16.dp))
         }
         Column {
-            Text(label, fontSize = 11.sp, color = TextSecondary)
-            Text(value, fontSize = 13.sp, color = TextPrimary,
-                fontWeight = FontWeight.Medium)
+            Text(label, fontSize = 10.sp, color = TextSecondary)
+            Text(value, fontSize = 12.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -393,7 +574,7 @@ private fun ProfileMenuRow(
         modifier              = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -403,51 +584,18 @@ private fun ProfileMenuRow(
         ) {
             Box(
                 modifier         = Modifier
-                    .size(36.dp)
-                    .background(Color(0xFFDAEFDC), CircleShape),
+                    .size(32.dp)
+                    .background(ChipBlue, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, null, tint = AccentGreen, modifier = Modifier.size(18.dp))
+                Icon(icon, null, tint = AccentBlue, modifier = Modifier.size(16.dp))
             }
-            Text(label, fontSize = 14.sp,
-                color = TextPrimary, fontWeight = FontWeight.Medium)
+            Text(label, fontSize = 13.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
         }
-        Icon(Icons.Default.ChevronRight, null,
-            tint = TextSecondary, modifier = Modifier.size(18.dp))
-    }
-}
-
-@Composable
-private fun StatCard(
-    modifier:  Modifier,
-    label:     String,
-    value:     String,
-    icon:      ImageVector
-) {
-    Card(
-        modifier  = modifier,
-        shape     = RoundedCornerShape(12.dp),
-        colors    = CardDefaults.cardColors(containerColor = CardWhite),
-        elevation = CardDefaults.cardElevation(1.dp)
-    ) {
-        Column(
-            modifier            = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Icon(icon, null,
-                tint     = AccentGreen,
-                modifier = Modifier.size(18.dp))
-            Text(value,
-                fontSize   = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color      = TextPrimary)
-            Text(label,
-                fontSize  = 10.sp,
-                color     = TextSecondary,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-        }
+        Icon(
+            Icons.Default.ChevronRight, null,
+            tint     = TextSecondary,
+            modifier = Modifier.size(16.dp)
+        )
     }
 }

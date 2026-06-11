@@ -8,7 +8,12 @@ data class ActivityData(
     val description: String,
     val imageRes:    String,
     val instagram:   String? = null,
-    val link:        String? = null
+    val link:        String? = null,
+    val organizationName: String? = null,
+    val startDate: String? = null,
+    val duration: String? = null,
+    val remainingQuota: Int? = null,
+    val category: String? = null
 )
 
 fun getDummyActivities() = listOf(
