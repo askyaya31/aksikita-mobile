@@ -99,7 +99,6 @@ fun SplashScreen() {
 
             when (savedSession.role) {
                 SessionPreferences.ROLE_VOLUNTEER -> {
-                    // Fetch volunteer profile dari API sebelum restore session
                     val volunteerProfileDto = try {
                         val profileResp = apiService.getVolunteerProfile()
                         if (profileResp.isSuccessful) {

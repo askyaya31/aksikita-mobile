@@ -100,10 +100,10 @@ class LoginViewModel @Inject constructor(
                     val avatarUrl = body.user.avatar
                     // FIX: kembalikan volunteerProfileDto agar profile tidak kosong
                     userSession.restoreSession(
-                        email               = body.user.email,
-                        name                = body.user.name,
-                        volunteer           = null,
-                        avatarUrl           = avatarUrl,
+                        email     = body.user.email,
+                        name      = body.user.name,
+                        volunteer = null,
+                        avatarUrl = avatarUrl,
                         volunteerProfileDto = body.user.volunteer_profile
                     )
                     sessionPrefs.saveVolunteerSession(

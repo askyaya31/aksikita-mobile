@@ -42,12 +42,11 @@ class UserSession @Inject constructor(){
 
     val isDummyAccount get() = currentUser?.email?.let { dummyVolunteerMap.containsKey(it) } ?: false
 
-    fun updateVolunteerProfile(updatedProfile: Volunteer) {
-        val currentEmail = currentUser?.email ?: return
-        if (dummyVolunteerMap.containsKey(currentEmail)) {
-            dummyVolunteerMap[currentEmail] = updatedProfile
-        }
-        currentVolunteerProfile = updatedProfile
+    var volunteerProfileDto: VolunteerProfileDto? by mutableStateOf(null)
+        private set
+
+    fun updateVolunteerProfileDto(profile: VolunteerProfileDto?) {
+        volunteerProfileDto = profile
     }
 
     fun updateAvatarUrl(avatarUrl: String?) {
@@ -91,6 +90,15 @@ class UserSession @Inject constructor(){
         } else {
             currentVolunteerProfile = dummyVolunteerMap[email]
         }
+        email:     String,
+        name:      String,
+        volunteer: Volunteer?,
+        avatarUrl: String? = null,
+        volunteerProfileDto: VolunteerProfileDto? = null
+    ) {
+        currentUser = User(name = name, email = email, avatarUrl = avatarUrl)
+        currentVolunteerProfile = volunteer ?: dummyVolunteerMap[email]
+        this.volunteerProfileDto = volunteerProfileDto
     }
 
     fun logout() {

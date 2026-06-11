@@ -1,6 +1,7 @@
 package com.example.prototypevolunteerapp.ui.screens.profile
 
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -30,19 +31,17 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.prototypevolunteerapp.core.LocalBackStack
-import com.example.prototypevolunteerapp.R
 
-private val GreenDark  = Color(0xFF3D5C2A)
-private val GreenMid   = Color(0xFF5A7A5A)
-private val GreenLight = Color(0xFFEEF4E8)
-private val GreenBorder= Color(0xFFB8D8C0)
-private val BgColor    = Color(0xFFF4F7EF)
-private val CardWhite  = Color(0xFFFFFFFF)
-private val TextHint   = Color(0xFF6E8F6E)
-private val TextDark   = Color(0xFF1E2D1E)
-private val TagBg      = Color(0xFFEFF6FF)
-private val TagText    = Color(0xFF1D4ED8)
-private val TagBorder  = Color(0xFFBFDBFE)
+private val HeaderStart = Color(0xFF2B5CE6)
+private val HeaderEnd   = Color(0xFF5B8DEF)
+private val BgColor     = Color(0xFFEEF3FF)
+private val CardWhite   = Color(0xFFFFFFFF)
+private val AccentBlue  = Color(0xFF3D7BF5)
+private val TextHint    = Color(0xFF6B7280)
+private val TextDark    = Color(0xFF1A1F36)
+private val TagBg       = Color(0xFFEFF6FF)
+private val TagText     = Color(0xFF1D4ED8)
+private val TagBorder   = Color(0xFFBFDBFE)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,20 +52,211 @@ fun EditProfileScreen(
     val uiState  by viewModel.uiState.collectAsState()
     val snackbar  = remember { SnackbarHostState() }
 
+    var showSaveDialog   by remember { mutableStateOf(false) }
+    var showDiscardDialog by remember { mutableStateOf(false) }
+
+    // Digunakan untuk mendeteksi apakah ada perubahan yang belum disimpan
+    var initialName         by remember { mutableStateOf<String?>(null) }
+    var initialPhone        by remember { mutableStateOf<String?>(null) }
+    var initialAbout        by remember { mutableStateOf<String?>(null) }
+    var initialBirthDate    by remember { mutableStateOf<String?>(null) }
+    var initialGender       by remember { mutableStateOf<String?>(null) }
+    var initialCity         by remember { mutableStateOf<String?>(null) }
+    var initialProvince     by remember { mutableStateOf<String?>(null) }
+    var initialSkillsRaw    by remember { mutableStateOf<String?>(null) }
+    var initialInterestsRaw by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(uiState.isLoading) {
+        if (!uiState.isLoading && initialName == null) {
+            initialName         = uiState.name
+            initialPhone        = uiState.phone
+            initialAbout        = uiState.about
+            initialBirthDate    = uiState.birthDate
+            initialGender       = uiState.gender
+            initialCity         = uiState.city
+            initialProvince     = uiState.province
+            initialSkillsRaw    = uiState.skillsRaw
+            initialInterestsRaw = uiState.interestsRaw
+        }
+    }
+
+    // Cek apakah ada perubahan yang belum disimpan
+    val hasUnsavedChanges = remember(
+        uiState.name, uiState.phone, uiState.about, uiState.birthDate,
+        uiState.gender, uiState.city, uiState.province,
+        uiState.skillsRaw, uiState.interestsRaw, uiState.selectedImageUri
+    ) {
+        initialName != null && (
+                uiState.name         != initialName         ||
+                        uiState.phone        != initialPhone        ||
+                        uiState.about        != initialAbout        ||
+                        uiState.birthDate    != initialBirthDate    ||
+                        uiState.gender       != initialGender       ||
+                        uiState.city         != initialCity         ||
+                        uiState.province     != initialProvince     ||
+                        uiState.skillsRaw    != initialSkillsRaw    ||
+                        uiState.interestsRaw != initialInterestsRaw ||
+                        uiState.selectedImageUri != null
+                )
+    }
+
+    // Tampilkan dialog jika ada perubahan
+    BackHandler(enabled = hasUnsavedChanges) {
+        showDiscardDialog = true
+    }
+
+    // Navigasi balik otomatis setelah berhasil disimpan
     LaunchedEffect(uiState.isSaved) {
         if (uiState.isSaved) {
             viewModel.onSavedHandled()
             backStack.removeLastOrNull()
         }
     }
+
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { snackbar.showSnackbar(it) }
     }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        viewModel.onImageSelected(uri)
+    ) { uri: Uri? -> viewModel.onImageSelected(uri) }
+
+    if (showSaveDialog) {
+        AlertDialog(
+            onDismissRequest = { showSaveDialog = false },
+            containerColor   = CardWhite,
+            shape            = RoundedCornerShape(20.dp),
+            title = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier            = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier         = Modifier
+                            .size(56.dp)
+                            .background(AccentBlue.copy(alpha = 0.1f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Save, null,
+                            tint     = AccentBlue,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "Simpan Perubahan?",
+                        fontWeight = FontWeight.Bold,
+                        fontSize   = 17.sp,
+                        color      = TextDark,
+                        textAlign  = TextAlign.Center
+                    )
+                }
+            },
+            text = {
+                Text(
+                    "Pastikan semua data yang kamu isi sudah benar. Perubahan akan langsung diterapkan ke profilmu.",
+                    fontSize   = 14.sp,
+                    lineHeight = 21.sp,
+                    color      = TextHint,
+                    textAlign  = TextAlign.Center,
+                    modifier   = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                // Tombol konfirmasi
+                Button(
+                    onClick  = { showSaveDialog = false; viewModel.onSave() },
+                    modifier = Modifier.fillMaxWidth().height(46.dp),
+                    shape    = RoundedCornerShape(12.dp),
+                    colors   = ButtonDefaults.buttonColors(containerColor = AccentBlue)
+                ) {
+                    Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Ya, Simpan", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+            },
+            dismissButton = {
+                // Tombol batal
+                OutlinedButton(
+                    onClick  = { showSaveDialog = false },
+                    modifier = Modifier.fillMaxWidth().height(46.dp),
+                    shape    = RoundedCornerShape(12.dp),
+                    border   = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE2E8F0))
+                ) {
+                    Text("Cek Lagi", color = TextHint, fontSize = 14.sp)
+                }
+            }
+        )
+    }
+
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            containerColor   = CardWhite,
+            shape            = RoundedCornerShape(20.dp),
+            title = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier            = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier         = Modifier
+                            .size(56.dp)
+                            .background(Color(0xFFFFF3CD), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Warning, null,
+                            tint     = Color(0xFFD97706),
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "Keluar Tanpa Menyimpan?",
+                        fontWeight = FontWeight.Bold,
+                        fontSize   = 17.sp,
+                        color      = TextDark,
+                        textAlign  = TextAlign.Center
+                    )
+                }
+            },
+            text = {
+                Text(
+                    "Kamu punya perubahan yang belum disimpan. Kalau keluar sekarang, semua perubahan akan hilang.",
+                    fontSize   = 14.sp,
+                    lineHeight = 21.sp,
+                    color      = TextHint,
+                    textAlign  = TextAlign.Center,
+                    modifier   = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                // Tombol keluar
+                Button(
+                    onClick  = { showDiscardDialog = false; backStack.removeLastOrNull() },
+                    modifier = Modifier.fillMaxWidth().height(46.dp),
+                    shape    = RoundedCornerShape(12.dp),
+                    colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
+                ) {
+                    Icon(Icons.Default.ExitToApp, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Keluar", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+            },
+            dismissButton = {
+                // Tombol lanjut edit
+                OutlinedButton(
+                    onClick  = { showDiscardDialog = false },
+                    modifier = Modifier.fillMaxWidth().height(46.dp),
+                    shape    = RoundedCornerShape(12.dp),
+                    border   = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE2E8F0))
+                ) {
+                    Text("Lanjut Edit", color = TextHint, fontSize = 14.sp)
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -74,22 +264,34 @@ fun EditProfileScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Edit Profil", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.White)
+                    Text(
+                        "Edit Profil",
+                        fontWeight = FontWeight.Bold,
+                        fontSize   = 18.sp,
+                        color      = Color.White
+                    )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { backStack.removeLastOrNull() }) {
+                    // Back button juga cek perubahan sebelum keluar
+                    IconButton(onClick = {
+                        if (hasUnsavedChanges) showDiscardDialog = true
+                        else backStack.removeLastOrNull()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = GreenDark)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = HeaderStart)
             )
         },
         containerColor = BgColor
     ) { innerPadding ->
 
         if (uiState.isLoading) {
-            Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = GreenMid)
+            Box(
+                Modifier.fillMaxSize().padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = AccentBlue)
             }
             return@Scaffold
         }
@@ -103,13 +305,13 @@ fun EditProfileScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Brush.verticalGradient(listOf(GreenDark, GreenMid)))
+                    .background(Brush.verticalGradient(listOf(HeaderStart, HeaderEnd)))
                     .padding(horizontal = 20.dp, vertical = 12.dp)
             ) {
                 Text(
                     "Lengkapi profilmu agar organisasi lebih mudah mengenalimu.",
                     fontSize = 12.sp,
-                    color    = Color(0xFFCFE7CD)
+                    color    = Color(0xFFBFDBFE)
                 )
             }
 
@@ -119,6 +321,7 @@ fun EditProfileScreen(
                     .padding(horizontal = 16.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+
                 Card(
                     modifier  = Modifier.fillMaxWidth(),
                     shape     = RoundedCornerShape(16.dp),
@@ -128,11 +331,11 @@ fun EditProfileScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Brush.linearGradient(listOf(Color(0xFF1E3A8A), Color(0xFF3B82F6))))
+                            .background(Brush.linearGradient(listOf(HeaderStart, HeaderEnd)))
                             .padding(horizontal = 20.dp, vertical = 20.dp)
                     ) {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                            verticalAlignment     = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             Box(
@@ -164,7 +367,6 @@ fun EditProfileScreen(
                                         color      = Color.White
                                     )
                                 }
-
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
@@ -172,8 +374,7 @@ fun EditProfileScreen(
                                     contentAlignment = Alignment.BottomCenter
                                 ) {
                                     Icon(
-                                        Icons.Default.CameraAlt,
-                                        null,
+                                        Icons.Default.CameraAlt, null,
                                         tint     = Color.White.copy(alpha = 0.9f),
                                         modifier = Modifier.size(18.dp).padding(bottom = 4.dp)
                                     )
@@ -187,27 +388,25 @@ fun EditProfileScreen(
                                     fontSize   = 16.sp,
                                     fontWeight = FontWeight.Bold
                                 )
-
                                 Surface(
-                                    shape = RoundedCornerShape(50.dp),
-                                    color = Color.White.copy(alpha = 0.15f),
+                                    shape    = RoundedCornerShape(50.dp),
+                                    color    = Color.White.copy(alpha = 0.15f),
                                     modifier = Modifier
                                         .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(50.dp))
                                         .clickable { imagePickerLauncher.launch("image/*") }
                                 ) {
                                     Row(
-                                        modifier             = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                        verticalAlignment    = Alignment.CenterVertically,
+                                        modifier              = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        verticalAlignment     = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         Icon(
-                                            Icons.Default.CameraAlt,
-                                            null,
+                                            Icons.Default.CameraAlt, null,
                                             tint     = Color.White.copy(alpha = 0.9f),
                                             modifier = Modifier.size(13.dp)
                                         )
                                         Text(
-                                            if (uiState.selectedImageUri != null) "Foto dipilih ✓" else "Ganti Foto",
+                                            if (uiState.selectedImageUri != null) "Foto dipilih" else "Ganti Foto",
                                             color      = Color.White.copy(alpha = 0.9f),
                                             fontSize   = 12.sp,
                                             fontWeight = FontWeight.SemiBold
@@ -224,31 +423,36 @@ fun EditProfileScreen(
                     }
                 }
 
+                // Section Data Akun
                 ProfileSection(title = "Data Akun") {
                     ProfileField(
-                        label       = "Nama Lengkap",
-                        value       = uiState.name,
+                        label         = "Nama Lengkap",
+                        value         = uiState.name,
                         onValueChange = viewModel::onNameChange,
-                        icon        = Icons.Default.Person,
-                        placeholder = "Nama lengkap kamu"
+                        icon          = Icons.Default.Person,
+                        placeholder   = "Nama lengkap kamu"
                     )
                     ProfileField(
-                        label       = "Nomor Telepon",
-                        value       = uiState.phone,
+                        label         = "Nomor Telepon",
+                        value         = uiState.phone,
                         onValueChange = viewModel::onPhoneChange,
-                        icon        = Icons.Default.Phone,
-                        placeholder = "08xxxxxxxxxx"
+                        icon          = Icons.Default.Phone,
+                        placeholder   = "08xxxxxxxxxx"
                     )
+                    // Email tidak bisa diubah
                     OutlinedTextField(
                         value         = "Email tidak dapat diubah",
                         onValueChange = {},
                         label         = { Text("Email", fontSize = 13.sp) },
-                        leadingIcon   = { Icon(Icons.Default.Email, null, tint = TextHint, modifier = Modifier.size(20.dp)) },
-                        enabled       = false,
-                        modifier      = Modifier.fillMaxWidth(),
-                        singleLine    = true,
-                        shape         = RoundedCornerShape(12.dp),
-                        colors        = OutlinedTextFieldDefaults.colors(
+                        leadingIcon   = {
+                            Icon(Icons.Default.Email, null,
+                                tint = TextHint, modifier = Modifier.size(20.dp))
+                        },
+                        enabled    = false,
+                        modifier   = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape      = RoundedCornerShape(12.dp),
+                        colors     = OutlinedTextFieldDefaults.colors(
                             disabledTextColor        = Color(0xFF94A3B8),
                             disabledBorderColor      = Color(0xFFE2E8F0),
                             disabledContainerColor   = Color(0xFFF8FAFC),
@@ -258,20 +462,19 @@ fun EditProfileScreen(
                     )
                 }
 
+                // Section Data Pribadi
                 ProfileSection(title = "Data Pribadi") {
                     ProfileField(
-                        label       = "Tanggal Lahir",
-                        value       = uiState.birthDate,
+                        label         = "Tanggal Lahir",
+                        value         = uiState.birthDate,
                         onValueChange = viewModel::onBirthDateChange,
-                        icon        = Icons.Default.CalendarMonth,
-                        placeholder = "YYYY-MM-DD (contoh: 2000-08-17)"
+                        icon          = Icons.Default.CalendarMonth,
+                        placeholder   = "YYYY-MM-DD (contoh: 2000-08-17)"
                     )
-
                     GenderDropdown(
                         selected = uiState.gender,
                         onSelect = viewModel::onGenderChange
                     )
-
                     Row(
                         modifier              = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -293,7 +496,6 @@ fun EditProfileScreen(
                             modifier      = Modifier.weight(1f)
                         )
                     }
-
                     OutlinedTextField(
                         value         = uiState.about,
                         onValueChange = viewModel::onAboutChange,
@@ -318,13 +520,15 @@ fun EditProfileScreen(
                         modifier = Modifier.padding(start = 4.dp)
                     )
                 }
+
+                // Section Keahlian & Minat
                 ProfileSection(title = "Keahlian & Minat") {
                     ProfileField(
-                        label       = "Keahlian",
-                        value       = uiState.skillsRaw,
+                        label         = "Keahlian",
+                        value         = uiState.skillsRaw,
                         onValueChange = viewModel::onSkillsRawChange,
-                        icon        = Icons.Default.School,
-                        placeholder = "Komunikasi, Desain, Coding, Fotografi…"
+                        icon          = Icons.Default.School,
+                        placeholder   = "Komunikasi, Desain, Coding, Fotografi…"
                     )
                     Text(
                         "Pisahkan dengan koma.",
@@ -337,11 +541,11 @@ fun EditProfileScreen(
                     Spacer(Modifier.height(4.dp))
 
                     ProfileField(
-                        label       = "Minat",
-                        value       = uiState.interestsRaw,
+                        label         = "Minat",
+                        value         = uiState.interestsRaw,
                         onValueChange = viewModel::onInterestsRawChange,
-                        icon        = Icons.Default.Favorite,
-                        placeholder = "Lingkungan, Pendidikan, Kesehatan, Sosial…"
+                        icon          = Icons.Default.Favorite,
+                        placeholder   = "Lingkungan, Pendidikan, Kesehatan, Sosial…"
                     )
                     Text(
                         "Pisahkan dengan koma.",
@@ -352,12 +556,13 @@ fun EditProfileScreen(
                     TagsPreview(raw = uiState.interestsRaw)
                 }
 
+                // Simpan
                 Button(
-                    onClick  = { viewModel.onSave() },
+                    onClick  = { showSaveDialog = true },
                     enabled  = !uiState.isSaving,
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape    = RoundedCornerShape(14.dp),
-                    colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B82F6))
+                    colors   = ButtonDefaults.buttonColors(containerColor = AccentBlue)
                 ) {
                     if (uiState.isSaving) {
                         CircularProgressIndicator(
@@ -368,7 +573,8 @@ fun EditProfileScreen(
                         Spacer(Modifier.width(10.dp))
                         Text("Menyimpan…", fontSize = 15.sp, color = Color.White)
                     } else {
-                        Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Check, null,
+                            tint = Color.White, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
                             "Simpan Perubahan",
@@ -379,13 +585,17 @@ fun EditProfileScreen(
                     }
                 }
 
+                // Tombol batal
                 OutlinedButton(
-                    onClick  = { backStack.removeLastOrNull() },
+                    onClick  = {
+                        if (hasUnsavedChanges) showDiscardDialog = true
+                        else backStack.removeLastOrNull()
+                    },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape    = RoundedCornerShape(14.dp),
                     border   = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFE2E8F0))
                 ) {
-                    Text("Batal", fontSize = 15.sp, color = Color(0xFF64748B))
+                    Text("Batal", fontSize = 15.sp, color = TextHint)
                 }
 
                 Spacer(Modifier.height(24.dp))
@@ -399,23 +609,23 @@ private fun TagsPreview(raw: String) {
     val tags = raw.split(",").map { it.trim() }.filter { it.isNotBlank() }
     if (tags.isEmpty()) return
 
-    androidx.compose.foundation.layout.FlowRow(
+    FlowRow(
         modifier              = Modifier.fillMaxWidth().padding(top = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalArrangement   = Arrangement.spacedBy(6.dp)
     ) {
         tags.forEach { tag ->
             Surface(
-                shape = RoundedCornerShape(50.dp),
-                color = TagBg,
+                shape  = RoundedCornerShape(50.dp),
+                color  = TagBg,
                 border = androidx.compose.foundation.BorderStroke(1.dp, TagBorder)
             ) {
                 Text(
-                    text     = tag,
-                    fontSize = 12.sp,
-                    color    = TagText,
+                    text       = tag,
+                    fontSize   = 12.sp,
+                    color      = TagText,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                 )
             }
         }
@@ -435,7 +645,10 @@ private fun GenderDropdown(selected: String, onSelect: (String) -> Unit) {
             onValueChange = {},
             readOnly      = true,
             label         = { Text("Jenis Kelamin", fontSize = 13.sp) },
-            leadingIcon   = { Icon(Icons.Default.Wc, null, tint = TextHint, modifier = Modifier.size(20.dp)) },
+            leadingIcon   = {
+                Icon(Icons.Default.Wc, null,
+                    tint = TextHint, modifier = Modifier.size(20.dp))
+            },
             trailingIcon  = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier      = Modifier.fillMaxWidth().menuAnchor(),
             shape         = RoundedCornerShape(12.dp),
@@ -465,8 +678,8 @@ private fun ProfileSection(title: String, content: @Composable ColumnScope.() ->
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
-                modifier          = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+                modifier              = Modifier.fillMaxWidth(),
+                verticalAlignment     = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
@@ -511,9 +724,9 @@ private fun ProfileField(
 
 @Composable
 private fun profileFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor   = Color(0xFF3B82F6),
-    unfocusedBorderColor = Color(0xFFE2E8F0),
-    focusedLabelColor    = Color(0xFF3B82F6),
-    focusedLeadingIconColor   = GreenMid,
+    focusedBorderColor        = AccentBlue,
+    unfocusedBorderColor      = Color(0xFFE2E8F0),
+    focusedLabelColor         = AccentBlue,
+    focusedLeadingIconColor   = AccentBlue,
     unfocusedLeadingIconColor = TextHint
 )
