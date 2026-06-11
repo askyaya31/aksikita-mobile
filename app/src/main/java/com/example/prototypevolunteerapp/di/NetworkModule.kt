@@ -48,28 +48,8 @@ object NetworkModule {
                 .body(fixedBody.toResponseBody(contentType))
                 .build()
         }
-        
-        val ngrokInterceptor = Interceptor { chain ->
-            val request = chain.request().newBuilder()
-                .addHeader("ngrok-skip-browser-warning", "true")
-                .build()
-            chain.proceed(request)
-        }
 
-        val ngrokInterceptor = Interceptor { chain ->
-            val request = chain.request().newBuilder()
-                .addHeader("ngrok-skip-browser-warning", "true")
-                .build()
-            chain.proceed(request)
-        }
-
-        val ngrokInterceptor = Interceptor { chain ->
-            val request = chain.request().newBuilder()
-                .addHeader("ngrok-skip-browser-warning", "true")
-                .build()
-            chain.proceed(request)
-        }
-
+        // Cukup deklarasikan ngrokInterceptor satu kali saja
         val ngrokInterceptor = Interceptor { chain ->
             val request = chain.request().newBuilder()
                 .addHeader("ngrok-skip-browser-warning", "true")
