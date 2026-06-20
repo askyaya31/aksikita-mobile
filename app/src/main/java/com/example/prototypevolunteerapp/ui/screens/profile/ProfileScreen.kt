@@ -13,8 +13,12 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import coil.request.ImageRequest
-import coil.request.CachePolicy
+import androidx.compose.material.icons.filled.Chat
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.ui.platform.LocalContext
+import coil.request.CachePolicy
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,7 +34,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.prototypevolunteerapp.core.LocalBackStack
 import com.example.prototypevolunteerapp.core.Routes
-
+import com.example.prototypevolunteerapp.ui.components.ProfileMenuItem
 
 private val HeaderStart    = Color(0xFF2B5CE6)
 private val HeaderEnd      = Color(0xFF5B8DEF)
@@ -41,6 +45,7 @@ private val TextPrimary    = Color(0xFF1A1F36)
 private val TextSecondary  = Color(0xFF6B7280)
 private val ChipBlue       = Color(0xFFDDE8FF)
 private val ChipBlueText   = Color(0xFF1A3A8F)
+private val logout   = Color(0xFFB62121)
 private val AccentGreen    = AccentBlue
 private val ChipGreen      = ChipBlue
 
@@ -49,9 +54,11 @@ private val ChipGreen      = ChipBlue
 fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val backStack = LocalBackStack.current
     val uiState   by viewModel.uiState.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false)}
+    val unreadChatCount by viewModel.unreadChatCount.collectAsState(initial = 0)
 
     LaunchedEffect(uiState.shouldNavigateBack) {
         if (uiState.shouldNavigateBack) {
@@ -70,7 +77,7 @@ fun ProfileScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            containerColor   = CardWhite,
+            containerColor   = Color(0xFFDDE8FF),
             shape            = RoundedCornerShape(20.dp),
             icon             = {
                 Box(
@@ -82,7 +89,7 @@ fun ProfileScreen(
                     Icon(
                         Icons.Default.Logout,
                         contentDescription = null,
-                        tint               = AccentBlue,
+                        tint               = logout,
                         modifier           = Modifier.size(24.dp)
                     )
                 }
@@ -109,7 +116,7 @@ fun ProfileScreen(
                         showLogoutDialog = false
                         viewModel.onLogout()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
+                    colors = ButtonDefaults.buttonColors(containerColor = logout),
                     shape  = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -120,8 +127,8 @@ fun ProfileScreen(
                 OutlinedButton(
                     onClick = { showLogoutDialog = false },
                     shape   = RoundedCornerShape(12.dp),
-                    colors  = ButtonDefaults.outlinedButtonColors(contentColor = AccentBlue),
-                    border  = androidx.compose.foundation.BorderStroke(1.dp, AccentBlue),
+                    colors  = ButtonDefaults.outlinedButtonColors(contentColor = logout),
+                    border  = androidx.compose.foundation.BorderStroke(1.dp, logout),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Batal", fontSize = 13.sp)
@@ -148,7 +155,7 @@ fun ProfileScreen(
                 },
                 actions = {
                     IconButton(onClick = { showLogoutDialog = true }) {
-                        Icon(Icons.Default.Logout, "Logout", tint = Color(0xFFFFCDD2))
+                        Icon(Icons.Default.Logout, "Logout", tint = Color(0xFFB62121))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = HeaderStart)
@@ -219,16 +226,12 @@ fun ProfileScreen(
                             )
                         }
                     }
-
-                    // Nama
                     Text(
                         uiState.userName,
                         fontSize   = 17.sp,
                         fontWeight = FontWeight.Bold,
                         color      = Color.White
                     )
-
-                    // Email
                     Row(
                         verticalAlignment     = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -241,7 +244,6 @@ fun ProfileScreen(
                         Text(uiState.userEmail, fontSize = 11.sp, color = Color(0xFFB3CFFF))
                     }
 
-                    // Lokasi
                     if (!uiState.locationLabel.isNullOrBlank()) {
                         Row(
                             verticalAlignment     = Alignment.CenterVertically,
@@ -259,8 +261,6 @@ fun ProfileScreen(
                             )
                         }
                     }
-
-                    // Badge gender
                     if (!uiState.genderLabel.isNullOrBlank()) {
                         Surface(
                             shape = RoundedCornerShape(20.dp),
@@ -274,10 +274,7 @@ fun ProfileScreen(
                             )
                         }
                     }
-
                     Spacer(modifier = Modifier.height(2.dp))
-
-                    // Tombol Edit Profile
                     OutlinedButton(
                         onClick = { backStack.add(Routes.EditProfileRoute) },
                         shape  = RoundedCornerShape(20.dp),
@@ -305,8 +302,6 @@ fun ProfileScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-
-                // Peringatan profil kosong
                 if (!uiState.hasProfile) {
                     ProfileCard(title = "Lengkapi Profil Kamu") {
                         Text(
@@ -317,8 +312,6 @@ fun ProfileScreen(
                         )
                     }
                 }
-
-                // About Me
                 if (!uiState.bio.isNullOrBlank()) {
                     LabeledCard(label = "About Me") {
                         Text(
@@ -329,8 +322,6 @@ fun ProfileScreen(
                         )
                     }
                 }
-
-                // Skills
                 if (uiState.skills.isNotEmpty()) {
                     LabeledCard(label = "Skills") {
                         FlowRow(
@@ -354,8 +345,6 @@ fun ProfileScreen(
                         }
                     }
                 }
-
-                // Interests
                 if (uiState.interests.isNotEmpty()) {
                     LabeledCard(label = "Interests") {
                         FlowRow(
@@ -363,7 +352,6 @@ fun ProfileScreen(
                             verticalArrangement   = Arrangement.spacedBy(8.dp)
                         ) {
                             uiState.interests.forEach { interest ->
-                                // Disamain biru seperti Skills (sebelumnya ChipYellow)
                                 Box(
                                     modifier = Modifier
                                         .background(ChipBlue, RoundedCornerShape(50.dp))
@@ -372,7 +360,7 @@ fun ProfileScreen(
                                     Text(
                                         interest,
                                         fontSize   = 10.sp,
-                                        color      = ChipBlueText,   // sebelumnya ChipYellowText
+                                        color      = ChipBlueText,
                                         fontWeight = FontWeight.Medium
                                     )
                                 }
@@ -381,7 +369,6 @@ fun ProfileScreen(
                     }
                 }
 
-                // Contacts
                 LabeledCard(label = "Contacts") {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         if (!uiState.userPhone.isNullOrBlank()) {
@@ -435,16 +422,13 @@ fun ProfileScreen(
                             icon    = Icons.Default.HelpOutline,
                             label   = "Help / FAQ",
                             onClick = {
-                                // TODO: Buka User Manual AksiKita //
-                                // Opsi 1 link ke PDF di assets via FileProvider Intent
-                                // Opsi 2 buka URL dokumen
-                                // Opsi 3 navigate ke HelpScreen statis dalam app
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://drive.google.com/file/d/1jipKk1JPAuyK7f_x7umv3FJwzRSZEQlP/view?usp=sharing"))
+                                context.startActivity(intent)
                             }
                         )
                     }
                 }
 
-                // Error message
                 if (!uiState.errorMessage.isNullOrBlank()) {
                     Row(
                         verticalAlignment     = Alignment.CenterVertically,

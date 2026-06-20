@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.prototypevolunteerapp.R
 import com.example.prototypevolunteerapp.core.LocalBackStack
+import com.example.prototypevolunteerapp.ui.components.AppFooter
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -89,7 +90,9 @@ fun RegisterScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFF3E77D5), Color(0xFF61A5FA), Color(0xFFBFDCFE))
+                    colors = listOf(Color(0xFF5E9CE7),
+                        Color(0xFF7BB8F0),
+                        Color(0xFFCEE4FF))
                 )
             )
     ) {
@@ -220,8 +223,8 @@ fun RegisterScreen(
                 onClick  = { viewModel.onRegister() },
                 enabled  = !uiState.isLoading && isFormValid,
                 colors   = ButtonDefaults.buttonColors(
-                    containerColor         = Color(0xFF1A1A1A),
-                    disabledContainerColor = Color(0xFF1A1A1A).copy(alpha = 0.4f)
+                    containerColor         = Color(0xFFFFFFFF),
+                    disabledContainerColor = Color(0xCDFFFFFF).copy(alpha = 0.4f)
                 ),
                 shape    = RoundedCornerShape(50.dp),
                 modifier = Modifier.width(200.dp).height(52.dp)
@@ -229,7 +232,7 @@ fun RegisterScreen(
                 if (uiState.isLoading) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), color = White, strokeWidth = 2.dp)
                 } else {
-                    Text("Daftar Sekarang", color = White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Text("Daftar Sekarang", color = Color(0xFF1E3B8B).copy(alpha = 0.8f), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -240,10 +243,10 @@ fun RegisterScreen(
                 modifier          = Modifier.fillMaxWidth()
             ) {
                 HorizontalDivider(modifier = Modifier.weight(1f),
-                    color = White.copy(alpha = 0.4f), thickness = 1.dp)
-                Text("  Atau daftar dengan  ", color = White, fontSize = 13.sp)
+                    color = Color(0xFF1E3B8B).copy(alpha = 0.8f), thickness = 1.dp)
+                Text("  Atau daftar dengan  ", color = Color(0xFF1E3B8B).copy(alpha = 0.8f), fontSize = 13.sp)
                 HorizontalDivider(modifier = Modifier.weight(1f),
-                    color = White.copy(alpha = 0.4f), thickness = 1.dp)
+                    color    = Color(0xFF1E3B8B).copy(alpha = 0.8f), thickness = 1.dp)
             }
 
             Spacer(Modifier.height(16.dp))
@@ -287,9 +290,9 @@ fun RegisterScreen(
 
             Spacer(Modifier.height(24.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Sudah punya akun? ", color = White, fontSize = 14.sp)
+                Text("Sudah punya akun? ", color    = Color(0xFF1E3B8B).copy(alpha = 0.8f), fontSize = 14.sp)
                 Text(
-                    "Login", color = White, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                    "Login",color    = Color(0xFF1E3B8B).copy(alpha = 0.8f), fontSize = 14.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier.clickable { backStack.removeLastOrNull() }
                 )
             }

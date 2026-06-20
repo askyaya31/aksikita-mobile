@@ -113,7 +113,7 @@ class EditActivityViewModel @Inject constructor(
     }
 
     fun onNamaKegiatanChange(v: String)   { _formState.update { it.copy(namaKegiatan = v,   namaError = false) } }
-    fun onLocationsChange(v: String)      { _formState.update { it.copy(lokasi = v,         lokasiError = false) } } // Keep map if needed, generic below
+    fun onLocationsChange(v: String)      { _formState.update { it.copy(lokasi = v,         lokasiError = false) } }
     fun onLokasiChange(v: String)         { _formState.update { it.copy(lokasi = v,         lokasiError = false) } }
     fun onKotaChange(v: String)           { _formState.update { it.copy(kota = v,           kotaError = false) } }
     fun onTanggalMulaiChange(v: String)   { _formState.update { it.copy(tanggalMulai = v,   tanggalMulaiError = false) } }
@@ -263,9 +263,6 @@ class EditActivityViewModel @Inject constructor(
             }
         }
     }
-
-    // ── Fungsi Aksi Tambahan untuk Mengubah Status Event ──────────────────────
-
     fun onCompleteEvent() {
         val eventId = _formState.value.eventId
         if (eventId == -1) return
@@ -275,7 +272,7 @@ class EditActivityViewModel @Inject constructor(
                 if (resp.isSuccessful) {
                     _formState.update { it.copy(
                         statusFromApi  = "completed",
-                        isReadOnly     = true, // Mengunci form karena event telah selesai
+                        isReadOnly     = true,
                         successMessage = "Kegiatan telah selesai dilaksanakan."
                     )}
                 } else {
@@ -292,12 +289,11 @@ class EditActivityViewModel @Inject constructor(
         if (eventId == -1) return
         viewModelScope.launch {
             try {
-                // Mengirimkan bodi kosong seperti di Dashboard jika tidak memakai dialog alasan terpisah
                 val resp = apiService.cancelOrgEvent(eventId, emptyMap())
                 if (resp.isSuccessful) {
                     _formState.update { it.copy(
                         statusFromApi  = "cancelled",
-                        isReadOnly     = true, // Mengunci form karena event dibatalkan
+                        isReadOnly     = true,
                         successMessage = "Kegiatan berhasil dibatalkan."
                     )}
                 } else {

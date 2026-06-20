@@ -101,8 +101,14 @@ fun EditOrgProfileScreen(
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            IconButton(onClick = { viewModel.saveProfile() }) {
-                                Icon(Icons.Default.Save, contentDescription = "Simpan", tint = PrimaryBlue)
+                            TextButton(
+                                onClick = { viewModel.saveProfile() }
+                            ) {
+                                Text(
+                                    text = if (profile.isSaved) "Tersimpan" else "Simpan",
+                                    color = if (profile.isSaved) Color(0xFF4CAF50) else PrimaryBlue,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     },

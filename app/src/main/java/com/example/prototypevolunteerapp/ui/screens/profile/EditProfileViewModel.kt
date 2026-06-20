@@ -26,6 +26,7 @@ import javax.inject.Inject
 
 data class EditProfileUiState(
     val name:             String  = "",
+    val email:            String  = "",
     val phone:            String  = "",
     val about:            String  = "",
     val birthDate:        String  = "",
@@ -69,6 +70,7 @@ class EditProfileViewModel @Inject constructor(
                     update {
                         copy(
                             name             = u.name,
+                            email            = u.email ?: "",
                             phone            = u.phone ?: "",
                             about            = vp?.bio ?: "",
                             birthDate        = DateUtils.extractDatePart(vp?.date_of_birth),
@@ -92,6 +94,7 @@ class EditProfileViewModel @Inject constructor(
             update {
                 copy(
                     name         = saved["name"]?.takeIf      { it.isNotBlank() } ?: current?.name      ?: "",
+                    email        = userSession.currentUser?.email ?: "",
                     phone        = saved["phone"]?.takeIf     { it.isNotBlank() } ?: current?.phone     ?: "",
                     about        = saved["about"]?.takeIf     { it.isNotBlank() } ?: current?.about     ?: "",
                     birthDate    = DateUtils.extractDatePart(

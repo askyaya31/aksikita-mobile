@@ -54,7 +54,8 @@ fun NotificationsContent(
                 .background(
                     Brush.linearGradient(listOf(NavyDark, PrimaryBlue))
                 )
-                .padding(start = 16.dp, top = 20.dp, end = 16.dp, bottom = 20.dp),
+                .statusBarsPadding()
+                .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
@@ -66,7 +67,6 @@ fun NotificationsContent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Back button
                     Box(
                         modifier = Modifier
                             .size(38.dp)
@@ -82,8 +82,6 @@ fun NotificationsContent(
                             modifier = Modifier.size(20.dp)
                         )
                     }
-
-                    // Judul
                     Text(
                         "Notifications",
                         fontSize   = 20.sp,
@@ -91,8 +89,6 @@ fun NotificationsContent(
                         color      = Color.White
                     )
                 }
-
-                // Mark all read button
                 if (uiState.hasUnread) {
                     Surface(
                         shape    = RoundedCornerShape(99.dp),
@@ -129,9 +125,6 @@ fun NotificationsContent(
                 modifier = Modifier.padding(start = 50.dp)
             )
         }
-
-
-        // FILTER CHIPS
         Row(
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 12.dp),

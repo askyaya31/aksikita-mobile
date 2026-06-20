@@ -82,7 +82,6 @@ class NotifDetailViewModel @Inject constructor(
                         )
                         onFound(event)
                     } else {
-                        // Event tidak ketemu di search, fallback ke activities
                         _uiState.value = _uiState.value.copy(
                             isLoadingEvent = false,
                             eventNotFound  = true

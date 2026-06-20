@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.example.prototypevolunteerapp.data.model.toActivityData
 import javax.inject.Inject
 
 data class HomeUiState(
@@ -27,8 +28,11 @@ data class HomeUiState(
     val apiError:     String?            = null,
     val categoryChips:    List<String> = emptyList(),
     val selectedCategory: String?      = null,
-    val nearbyEvents: List<ActivityData> = emptyList(),
-    val userCity:     String?            = null
+    val nearbyEvents:    List<ActivityData> = emptyList(),
+    val isLoadingNearby: Boolean            = false,
+    val userCity:        String?            = null,
+    val upcomingSchedule: List<com.example.prototypevolunteerapp.data.remote.dto.ScheduleEventDto> = emptyList(),
+    val recommendations:  List<ActivityData> = emptyList()
 )
 
 @HiltViewModel
@@ -79,11 +83,114 @@ class HomeViewModel @Inject constructor(
 
     fun loadAll() {
         loadEvents()
+        loadCategories()
         if (userSession.isLoggedIn) {
             loadRegistrations()
-            loadNearbyEvents()
+            fetchProfileThenNearby()
+            loadUpcomingSchedule()
+            loadRecommendations()
         }
-        loadCategories()
+    }
+
+    private fun loadUpcomingSchedule() {
+        viewModelScope.launch {
+            runCatching { apiService.getSchedule(
+                month = java.util.Calendar.getInstance().get(java.util.Calendar.MONTH) + 1,
+                year  = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+            ) }
+                .onSuccess { resp ->
+                    _uiState.update { it.copy(upcomingSchedule = resp.upcoming.take(2)) }
+                }
+        }
+    }
+
+    private fun loadRecommendations() {
+        viewModelScope.launch {
+            runCatching { apiService.getRecommendations() }
+                .onSuccess { list ->
+                    _uiState.update { it.copy(
+                        recommendations = list.map { dto -> dto.toActivityData() }
+                    ) }
+                }
+        }
+    }
+    /**
+     * Fetch profil volunteer langsung dari API untuk mendapatkan city,
+     * lalu panggil loadNearbyEvents. Ini menghindari race condition di mana
+     * city belum tersedia di UserSession saat HomeViewModel dibuat.
+     */
+    private fun fetchProfileThenNearby() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingNearby = true) }
+            try {
+                val response = apiService.getVolunteerProfile()
+                if (response.isSuccessful && response.body() != null) {
+                    val vp = response.body()!!.user.volunteer_profile
+                    val city = vp?.city?.trim()?.takeIf { it.isNotBlank() }
+
+                    if (vp != null) userSession.updateVolunteerProfileDto(vp)
+
+                    if (city != null) {
+                        loadNearbyEvents(city)
+                    } else {
+                        android.util.Log.w("HomeViewModel", "Profil volunteer tidak memiliki city")
+                        _uiState.update { it.copy(isLoadingNearby = false) }
+                    }
+                } else {
+                    val city = userSession.volunteerProfileDto?.city?.trim()?.takeIf { it.isNotBlank() }
+                        ?: userSession.currentVolunteerProfile?.birthPlace?.trim()?.takeIf { it.isNotBlank() }
+                    if (city != null) {
+                        loadNearbyEvents(city)
+                    } else {
+                        android.util.Log.w("HomeViewModel", "fetchProfile gagal dan session tidak punya city")
+                        _uiState.update { it.copy(isLoadingNearby = false) }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("HomeViewModel", "fetchProfileThenNearby error: ${e.message}")
+                val city = userSession.volunteerProfileDto?.city?.trim()?.takeIf { it.isNotBlank() }
+                    ?: userSession.currentVolunteerProfile?.birthPlace?.trim()?.takeIf { it.isNotBlank() }
+                if (city != null) loadNearbyEvents(city)
+                else _uiState.update { it.copy(isLoadingNearby = false) }
+            }
+        }
+    }
+
+    private fun loadNearbyEvents(city: String) {
+        viewModelScope.launch {
+            android.util.Log.d("HomeViewModel", "loadNearbyEvents: mencari kegiatan di '$city'")
+            _uiState.update { it.copy(userCity = city, isLoadingNearby = true) }
+            try {
+                val response = apiService.getPublicEvents(city = city)
+                android.util.Log.d("HomeViewModel", "loadNearbyEvents response: ${response.code()}")
+                if (response.isSuccessful && response.body() != null) {
+                    val mapped = response.body()!!.data.map { event ->
+                        ActivityData(
+                            id          = event.id.toString(),
+                            slug        = event.slug ?: "",
+                            title       = event.title,
+                            location    = buildString {
+                                if (!event.location_name.isNullOrBlank()) append(event.location_name)
+                                if (!event.city.isNullOrBlank()) {
+                                    if (isNotEmpty()) append(", ")
+                                    append(event.city)
+                                }
+                            }.ifBlank { "Lokasi tidak tersedia" },
+                            description = event.description ?: "",
+                            imageRes    = event.poster ?: ""
+                        )
+                    }
+                    android.util.Log.d("HomeViewModel", "loadNearbyEvents: ${mapped.size} kegiatan ditemukan di '$city'")
+                    _uiState.update { it.copy(nearbyEvents = mapped, isLoadingNearby = false) }
+                } else {
+                    android.util.Log.w("HomeViewModel", "loadNearbyEvents: response ${response.code()} untuk city='$city'")
+                    _uiState.update { it.copy(isLoadingNearby = false) }
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("HomeViewModel", "loadNearbyEvents error: ${e.message}")
+                _uiState.update { it.copy(isLoadingNearby = false) }
+            }
+        }
     }
 
     private fun loadEvents(category: String? = _uiState.value.selectedCategory) {
@@ -109,8 +216,8 @@ class HomeViewModel @Inject constructor(
                             organizationName = event.organization?.organization_name,
                             startDate = event.start_date,
                             duration = if (event.start_time != null && event.end_time != null)
-                                        "${event.start_time} - ${event.end_time}"
-                                        else null,
+                                "${event.start_time} - ${event.end_time}"
+                            else null,
                             remainingQuota = event.remaining_quota,
                             category = event.categories?.firstOrNull()?.name
                         )
@@ -137,10 +244,8 @@ class HomeViewModel @Inject constructor(
                 val response = apiService.getVolunteerRegistrations()
                 if (response.isSuccessful && response.body() != null) {
                     val all = response.body()!!.data
-
                     val active    = all.filter { it.status in listOf("confirmed", "pending") }
                     val completed = all.count  { it.status in listOf("attended", "cancelled") }
-
                     _uiState.update {
                         it.copy(
                             activeRegistrations = active,
@@ -150,41 +255,6 @@ class HomeViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 android.util.Log.w("HomeViewModel", "loadRegistrations error: ${e.message}")
-
-            }
-        }
-    }
-    private fun loadNearbyEvents() {
-        val cityFromDto     = userSession.volunteerProfileDto?.city
-        val cityFromProfile = userSession.currentVolunteerProfile?.birthPlace
-        val city            = cityFromDto ?: cityFromProfile?: return
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(userCity = city) }
-            try {
-                val response = apiService.getPublicEvents(city = city)
-                if (response.isSuccessful && response.body() != null) {
-                    val mapped = response.body()!!.data.map { event ->
-                        ActivityData(
-                            id          = event.id.toString(),
-                            slug        = event.slug ?: "",
-                            title       = event.title,
-                            location    = buildString {
-                                if (!event.location_name.isNullOrBlank()) append(event.location_name)
-                                if (!event.city.isNullOrBlank()) {
-                                    if (isNotEmpty()) append(", ")
-                                    append(event.city)
-                                }
-                            }.ifBlank { "Lokasi tidak tersedia" },
-                            description = event.description ?: "",
-                            imageRes    = event.poster ?: ""
-                        )
-                    }
-                    _uiState.update { it.copy(nearbyEvents = mapped) }
-                }
-            } catch (e: Exception) {
-                android.util.Log.w("HomeViewModel", "loadNearbyEvents error: ${e.message}")
-
             }
         }
     }
@@ -206,6 +276,7 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
+
     fun onTabSelected(index: Int) {
         _uiState.update { it.copy(selectedTab = index) }
     }

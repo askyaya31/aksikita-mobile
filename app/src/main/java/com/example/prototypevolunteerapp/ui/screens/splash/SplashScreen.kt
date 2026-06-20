@@ -4,6 +4,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,12 +30,15 @@ import com.example.prototypevolunteerapp.core.UserSession
 import com.example.prototypevolunteerapp.data.model.NotificationRepository
 import com.example.prototypevolunteerapp.data.remote.ApiService
 import com.example.prototypevolunteerapp.data.preferences.SessionPreferences
+import com.example.prototypevolunteerapp.ui.components.AppFooter
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+
+private val TextMuted = Color(0xFF64748B)
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
@@ -83,22 +87,22 @@ fun SplashScreen() {
         val savedSession = sessionPrefs.savedSession.first()
 
         if (savedSession != null) {
-            val tokenValid = try {
-                val meResp = apiService.getMe()
-                meResp.isSuccessful
-            } catch (e: Exception) {
-                true
-            }
-
-            if (!tokenValid) {
-                sessionPrefs.clearSession()
-                backStack.removeLastOrNull()
-                backStack.add(Routes.WelcomeRoute)
-                return@LaunchedEffect
-            }
-
             when (savedSession.role) {
                 SessionPreferences.ROLE_VOLUNTEER -> {
+                    val tokenValid = try {
+                        val meResp = apiService.getMe()
+                        meResp.isSuccessful
+                    } catch (e: Exception) {
+                        true
+                    }
+
+                    if (!tokenValid) {
+                        sessionPrefs.clearSession()
+                        backStack.removeLastOrNull()
+                        backStack.add(Routes.WelcomeRoute)
+                        return@LaunchedEffect
+                    }
+
                     val volunteerProfileDto = try {
                         val profileResp = apiService.getVolunteerProfile()
                         if (profileResp.isSuccessful) {
@@ -120,6 +124,7 @@ fun SplashScreen() {
                     backStack.removeLastOrNull()
                     backStack.add(Routes.HomeRoute)
                 }
+
                 SessionPreferences.ROLE_ORGANIZER -> {
                     organizerSession.restoreSession(
                         email   = savedSession.email,
@@ -129,6 +134,7 @@ fun SplashScreen() {
                     backStack.removeLastOrNull()
                     backStack.add(Routes.OrgDashboardRoute)
                 }
+
                 else -> {
                     backStack.removeLastOrNull()
                     backStack.add(Routes.WelcomeRoute)
@@ -141,7 +147,6 @@ fun SplashScreen() {
     }
 
     val logoScale = 0.78f + (1f - 0.78f) * logoAnim.value
-
     Box(
         modifier         = Modifier
             .fillMaxSize()
@@ -185,6 +190,7 @@ fun SplashScreen() {
                     .alpha(taglineAnim.value)
                     .padding(horizontal = 40.dp)
             )
+            Spacer(Modifier.height(16.dp))
         }
     }
 }

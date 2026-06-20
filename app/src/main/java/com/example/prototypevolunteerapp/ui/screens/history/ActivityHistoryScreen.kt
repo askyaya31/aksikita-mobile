@@ -51,17 +51,26 @@ fun ActivityHistoryScreen(
     val backStack  = LocalBackStack.current
     val uiState    by viewModel.uiState.collectAsState()
     var activeTab  by remember { mutableStateOf(HistoryTab.ALL) }
+    var searchQuery by remember { mutableStateOf("") }
 
-    val filtered = when (activeTab) {
-        HistoryTab.ALL -> uiState.registrations
-        else -> uiState.registrations.filter { it.status == activeTab.status }
-    }
+    val filtered = uiState.registrations
+        .filter { reg ->
+            activeTab == HistoryTab.ALL || reg.status == activeTab.status
+        }
+        .filter { reg ->
+            if (searchQuery.isBlank()) true
+            else {
+                val q = searchQuery.trim().lowercase()
+                reg.event?.title?.lowercase()?.contains(q) == true ||
+                        reg.event?.organization?.organization_name?.lowercase()?.contains(q) == true ||
+                        reg.event?.city?.lowercase()?.contains(q) == true
+            }
+        }
 
     Scaffold(
         containerColor = BgScreen
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize()) {
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -94,6 +103,44 @@ fun ActivityHistoryScreen(
                     fontSize   = 18.sp,
                     fontWeight = FontWeight.Bold,
                     modifier   = Modifier.align(Alignment.Center)
+                )
+            }
+            Surface(
+                modifier        = Modifier.fillMaxWidth(),
+                color           = Color.White,
+                shadowElevation = 2.dp
+            ) {
+                OutlinedTextField(
+                    value         = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder   = {
+                        Text(
+                            "Cari kegiatan, organisasi, atau kota…",
+                            fontSize = 13.sp,
+                            color    = TextMuted
+                        )
+                    },
+                    leadingIcon   = {
+                        Icon(Icons.Default.Search, null, tint = TextMuted)
+                    },
+                    trailingIcon  = {
+                        if (searchQuery.isNotBlank()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Close, null, tint = TextMuted)
+                            }
+                        }
+                    },
+                    singleLine    = true,
+                    shape         = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor     = NavyDark,
+                        unfocusedBorderColor   = Color(0xFFE2E8F0),
+                        focusedContainerColor   = Color(0xFFF8FAFF),
+                        unfocusedContainerColor = Color(0xFFF8FAFF)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
                 )
             }
 
@@ -151,7 +198,6 @@ fun ActivityHistoryScreen(
                         }
                     }
                 }
-
                 when {
                     uiState.isLoading -> {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -165,7 +211,11 @@ fun ActivityHistoryScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            Text(uiState.errorMessage!!, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+                            Text(
+                                uiState.errorMessage!!,
+                                color     = MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center
+                            )
                             Spacer(Modifier.height(16.dp))
                             Button(
                                 onClick = { viewModel.loadHistory() },
@@ -186,36 +236,78 @@ fun ActivityHistoryScreen(
                                     .background(Color(0xFFEFF6FF), RoundedCornerShape(16.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.EventBusy, null, tint = PrimaryBlue, modifier = Modifier.size(32.dp))
+                                Icon(
+                                    if (searchQuery.isNotBlank()) Icons.Default.SearchOff
+                                    else Icons.Default.EventBusy,
+                                    null,
+                                    tint     = PrimaryBlue,
+                                    modifier = Modifier.size(32.dp)
+                                )
                             }
                             Spacer(Modifier.height(16.dp))
                             Text(
-                                if (activeTab == HistoryTab.ALL) "Belum ada riwayat kegiatan"
-                                else "Tidak ada kegiatan dengan status \"${activeTab.label}\"",
-                                fontWeight = FontWeight.SemiBold, fontSize = 15.sp,
-                                textAlign  = TextAlign.Center, color = TextDark
+                                when {
+                                    searchQuery.isNotBlank() ->
+                                        "Tidak ada hasil untuk \"$searchQuery\""
+                                    activeTab == HistoryTab.ALL ->
+                                        "Belum ada riwayat kegiatan"
+                                    else ->
+                                        "Tidak ada kegiatan dengan status \"${activeTab.label}\""
+                                },
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize   = 15.sp,
+                                textAlign  = TextAlign.Center,
+                                color      = TextDark
                             )
                             Spacer(Modifier.height(6.dp))
                             Text(
-                                "Kegiatan yang sudah kamu ikuti akan muncul di sini.",
+                                if (searchQuery.isNotBlank())
+                                    "Coba kata kunci lain atau hapus pencarian."
+                                else
+                                    "Kegiatan yang sudah kamu ikuti akan muncul di sini.",
                                 style     = MaterialTheme.typography.bodyMedium,
-                                color     = TextMuted, textAlign = TextAlign.Center
+                                color     = TextMuted,
+                                textAlign = TextAlign.Center
                             )
+                            if (searchQuery.isNotBlank()) {
+                                Spacer(Modifier.height(12.dp))
+                                TextButton(onClick = { searchQuery = "" }) {
+                                    Text("Hapus pencarian", color = PrimaryBlue)
+                                }
+                            }
                         }
                     }
 
                     else -> {
                         LazyColumn(
-                            modifier            = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                            modifier            = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                             contentPadding      = PaddingValues(top = 14.dp, bottom = 24.dp)
                         ) {
                             item {
-                                Text(
-                                    "${filtered.size} kegiatan",
-                                    fontSize = 12.sp, color = TextMuted,
-                                    modifier = Modifier.padding(bottom = 4.dp)
-                                )
+                                Row(
+                                    modifier              = Modifier.fillMaxWidth(),
+                                    verticalAlignment     = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        "${filtered.size} kegiatan",
+                                        fontSize = 12.sp,
+                                        color    = TextMuted,
+                                        modifier = Modifier.padding(bottom = 4.dp)
+                                    )
+                                    if (searchQuery.isNotBlank()) {
+                                        Text(
+                                            "Hasil untuk \"$searchQuery\"",
+                                            fontSize = 12.sp,
+                                            color    = NavyDark,
+                                            fontWeight = FontWeight.Medium,
+                                            modifier = Modifier.padding(bottom = 4.dp)
+                                        )
+                                    }
+                                }
                             }
                             items(filtered, key = { it.id }) { reg ->
                                 HistoryCard(
@@ -249,10 +341,10 @@ private fun HistoryCard(registration: RegistrationDto, onClick: () -> Unit) {
     val event = registration.event
 
     val (statusColor, statusLabel, statusBg) = when (registration.status) {
-        "confirmed" -> Triple(Color(0xFF0E7B6C), "Dikonfirmasi", Color(0xFFE3F5F2))
-        "attended"  -> Triple(Color(0xFF1E3A8A), "Hadir",        Color(0xFFEEF3FF))
-        "cancelled" -> Triple(Color(0xFF6B7280), "Dibatalkan",   Color(0xFFF1F5F9))
-        "pending"   -> Triple(Color(0xFFD4900A), "Menunggu",     Color(0xFFFDF5E1))
+        "confirmed" -> Triple(Color(0xFF166534), "Dikonfirmasi", Color(0xFFDCFDE9))
+        "attended"  -> Triple(Color(0xFF1E3A8A), "Hadir",        Color(0xFFDBEAFE))
+        "cancelled" -> Triple(Color(0xFF991B1B), "Dibatalkan",   Color(0xFFFEE2E2))
+        "pending"   -> Triple(Color(0xFF92400E), "Menunggu",     Color(0xFFFEF3C7))
         else        -> Triple(TextMuted,          registration.status, Color(0xFFF1F5F9))
     }
 
@@ -272,7 +364,9 @@ private fun HistoryCard(registration: RegistrationDto, onClick: () -> Unit) {
                     Text(
                         statusLabel,
                         modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        fontSize   = 11.sp, fontWeight = FontWeight.Bold, color = statusColor
+                        fontSize   = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color      = statusColor
                     )
                 }
                 registration.registered_at?.take(10)?.let {
@@ -284,8 +378,11 @@ private fun HistoryCard(registration: RegistrationDto, onClick: () -> Unit) {
 
             Text(
                 event?.title ?: "Kegiatan tidak tersedia",
-                fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
-                color      = TextDark, maxLines = 2, overflow = TextOverflow.Ellipsis
+                fontWeight = FontWeight.SemiBold,
+                fontSize   = 14.sp,
+                color      = TextDark,
+                maxLines   = 2,
+                overflow   = TextOverflow.Ellipsis
             )
 
             Spacer(Modifier.height(4.dp))
@@ -300,13 +397,19 @@ private fun HistoryCard(registration: RegistrationDto, onClick: () -> Unit) {
                 verticalAlignment     = Alignment.CenterVertically
             ) {
                 event?.city?.let {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Row(
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
                         Icon(Icons.Default.LocationOn, null, tint = TextMuted, modifier = Modifier.size(12.dp))
                         Text(it, fontSize = 11.sp, color = TextMuted)
                     }
                 }
                 event?.start_date?.let {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Row(
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
                         Icon(Icons.Default.CalendarToday, null, tint = TextMuted, modifier = Modifier.size(12.dp))
                         Text(it, fontSize = 11.sp, color = TextMuted)
                     }
@@ -317,15 +420,24 @@ private fun HistoryCard(registration: RegistrationDto, onClick: () -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 Text(
                     "\"$it\"",
-                    fontSize  = 11.sp, color = TextMuted,
+                    fontSize  = 11.sp,
+                    color     = TextMuted,
                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                 )
             }
+
             Row(
-                modifier              = Modifier.fillMaxWidth().padding(top = 8.dp),
+                modifier              = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
                 horizontalArrangement = Arrangement.End
             ) {
-                Icon(Icons.Default.ChevronRight, "Detail", tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                Icon(
+                    Icons.Default.ChevronRight,
+                    "Detail",
+                    tint     = PrimaryBlue,
+                    modifier = Modifier.size(18.dp)
+                )
             }
         }
     }

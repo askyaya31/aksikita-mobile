@@ -21,7 +21,9 @@ data class ActivityDetailUiState(
     val feedbackMessage: String?   = null,
     val isSaved:         Boolean   = false,
     val isLiked:         Boolean   = false,
-    val likesCount:      Int       = 0
+    val likesCount:      Int       = 0,
+    val registrationStatus: String? = null,
+    val chatRoomId:      Int?      = null
 )
 
 @HiltViewModel
@@ -40,9 +42,9 @@ class ActivityDetailViewModel @Inject constructor(
         currentEventId = eventId
         _uiState.value = _uiState.value.copy(isLoggedIn = userSession.isLoggedIn)
 
-        if (eventId > 0) {
+        if (eventId > 0 || slug.isNotBlank()) {
             fetchEventDetail(eventId, slug)
-            if (userSession.isLoggedIn) {
+            if (userSession.isLoggedIn && eventId > 0) {
                 checkSavedStatus(eventId)
                 checkLikedStatus(eventId)
             }
@@ -78,7 +80,7 @@ class ActivityDetailViewModel @Inject constructor(
 
     fun toggleSave() {
         val current = _uiState.value.isSaved
-        // Optimistic update
+
         _uiState.value = _uiState.value.copy(isSaved = !current)
         viewModelScope.launch {
             try {
@@ -86,11 +88,9 @@ class ActivityDetailViewModel @Inject constructor(
                 if (resp.isSuccessful) {
                     _uiState.value = _uiState.value.copy(isSaved = resp.body()?.saved ?: !current)
                 } else {
-                    // Revert
                     _uiState.value = _uiState.value.copy(isSaved = current)
                 }
             } catch (_: Exception) {
-                // Revert
                 _uiState.value = _uiState.value.copy(isSaved = current)
             }
         }
@@ -99,7 +99,6 @@ class ActivityDetailViewModel @Inject constructor(
     fun toggleLike() {
         val current      = _uiState.value.isLiked
         val currentCount = _uiState.value.likesCount
-        // Optimistic update
         _uiState.value = _uiState.value.copy(
             isLiked    = !current,
             likesCount = if (current) currentCount - 1 else currentCount + 1
@@ -113,14 +112,12 @@ class ActivityDetailViewModel @Inject constructor(
                         likesCount = resp.body()?.likes_count ?: currentCount
                     )
                 } else {
-                    // Revert
                     _uiState.value = _uiState.value.copy(
                         isLiked    = current,
                         likesCount = currentCount
                     )
                 }
             } catch (_: Exception) {
-                // Revert
                 _uiState.value = _uiState.value.copy(
                     isLiked    = current,
                     likesCount = currentCount
@@ -164,12 +161,38 @@ class ActivityDetailViewModel @Inject constructor(
     private fun checkRegistrationStatus(eventId: Int) {
         viewModelScope.launch {
             try {
-                val response = apiService.getVolunteerRegistrations()
-                if (response.isSuccessful && response.body() != null) {
-                    val alreadyRegistered = response.body()!!.data.any { reg ->
-                        reg.event?.id == eventId && reg.status !in listOf("cancelled")
+                var page = 1
+                var found = false
+                var hasMore = true
+
+                while (hasMore && !found) {
+                    val response = apiService.getVolunteerRegistrations(page = page)
+                    if (response.isSuccessful && response.body() != null) {
+                        val body = response.body()!!
+                        val matching = body.data.find { reg ->
+                            reg.event?.id == eventId && reg.status !in listOf("cancelled")
+                        }
+                        if (matching != null) {
+                            _uiState.value = _uiState.value.copy(
+                                isRegistered       = true,
+                                registrationStatus = matching.status,
+                                chatRoomId         = matching.chat_room_id
+                            )
+                            found = true
+                        }
+                        hasMore = body.current_page < body.last_page
+                        page++
+                    } else {
+                        hasMore = false
                     }
-                    _uiState.value = _uiState.value.copy(isRegistered = alreadyRegistered)
+                }
+
+                if (!found) {
+                    _uiState.value = _uiState.value.copy(
+                        isRegistered       = false,
+                        registrationStatus = null,
+                        chatRoomId         = null
+                    )
                 }
             } catch (e: Exception) {
                 android.util.Log.w("ActivityDetailVM", "Gagal cek status registrasi: ${e.message}")
@@ -187,7 +210,7 @@ class ActivityDetailViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(
                         isRegistered    = true,
                         isProcessing    = false,
-                        feedbackMessage = "Pendaftaran berhasil! Selamat bergabung."
+                        feedbackMessage = "Pendaftaran berhasil dikirim! Menunggu konfirmasi dari organisasi."
                     )
                     fetchEventDetail(currentEventId, _uiState.value.event?.slug ?: "")
                 } else {

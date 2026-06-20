@@ -41,10 +41,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.prototypevolunteerapp.R
 import com.example.prototypevolunteerapp.core.LocalBackStack
 import com.example.prototypevolunteerapp.core.Routes
+import com.example.prototypevolunteerapp.ui.components.AppFooter
 
-private val InputBg    = Color(0x33FFFFFF)
-private val White      = Color.White
-private val HintColor  = Color(0xAAFFFFFF)
+private val InputBg   = Color(0x33FFFFFF)
+private val White     = Color.White
+private val HintColor = Color(0xAAFFFFFF)
 
 enum class LoginRole { VOLUNTEER, ORGANISASI }
 
@@ -97,9 +98,9 @@ fun LoginScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(colors = listOf(
-                Color(0xFF3E77D5),
-                Color(0xFF61A5FA),
-                Color(0xFFBFDCFE)
+                Color(0xFF5E9CE7),
+                Color(0xFF7BB8F0),
+                Color(0xFFCEE4FF)
             )))
     ) {
         Column(
@@ -112,13 +113,14 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(90.dp))
 
             Text("Login Account", color = White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(15.dp))
 
             RoleToggle(
                 selected = uiState.role,
                 onSelect = { viewModel.onRoleChange(it) }
             )
             Spacer(modifier = Modifier.height(28.dp))
+
             OutlinedTextField(
                 value         = uiState.email,
                 onValueChange = { viewModel.onEmailChange(it) },
@@ -135,6 +137,7 @@ fun LoginScreen(
                 modifier        = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(16.dp))
+
             OutlinedTextField(
                 value         = uiState.password,
                 onValueChange = { viewModel.onPasswordChange(it) },
@@ -157,6 +160,7 @@ fun LoginScreen(
                 shape    = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
             )
+
             if (uiState.loginError.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -166,6 +170,7 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+
             Spacer(modifier = Modifier.height(8.dp))
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
                 Text(
@@ -182,37 +187,55 @@ fun LoginScreen(
                 onClick  = { viewModel.onLogin() },
                 enabled  = uiState.email.isNotBlank() && uiState.password.isNotBlank(),
                 colors   = ButtonDefaults.buttonColors(
-                    containerColor         = Color(0xFF1A1A1A),
-                    disabledContainerColor = Color(0xFF1A1A1A).copy(alpha = 0.4f)
+                    containerColor         = Color.White,
+                    disabledContainerColor = Color.White.copy(alpha = 0.8f)
                 ),
-                shape    = RoundedCornerShape(50.dp),
-                modifier = Modifier.width(160.dp).height(52.dp)
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+                shape    = RoundedCornerShape(40.dp),
+                modifier = Modifier
+                    .width(160.dp)
+                    .height(52.dp)
             ) {
-                Text("Login", color = White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("Login", color = Color(0xFF1E3B8B), fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(40.dp))
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier          = Modifier.fillMaxWidth()
             ) {
-                HorizontalDivider(modifier = Modifier.weight(1f),
-                    color = White.copy(alpha = 0.4f), thickness = 1.dp)
-                Text("  Or Login With  ", color = White, fontSize = 13.sp)
-                HorizontalDivider(modifier = Modifier.weight(1f),
-                    color = White.copy(alpha = 0.4f), thickness = 1.dp)
+                HorizontalDivider(
+                    modifier  = Modifier.weight(1f),
+                    color     =Color(0xFF1E3B8B).copy(alpha = 0.8f),
+                    thickness = 1.dp
+                )
+                Text(
+                    "  Or Login With  ",
+                    color    = Color(0xFF1E3B8B).copy(alpha = 0.8f),
+                    fontSize = 13.sp
+                )
+                HorizontalDivider(
+                    modifier  = Modifier.weight(1f),
+                    color     = Color(0xFF1E3B8B).copy(alpha = 0.8f),
+                    thickness = 1.dp
+                )
             }
+
             Spacer(modifier = Modifier.height(20.dp))
+
             Surface(
                 onClick = {
                     googleSignInClient.signOut().addOnCompleteListener {
                         googleLauncher.launch(googleSignInClient.signInIntent)
                     }
                 },
-                shape         = RoundedCornerShape(50.dp),
-                color         = White,
+                shape           = RoundedCornerShape(50.dp),
+                color           = White,
                 shadowElevation = 2.dp,
-                modifier      = Modifier.fillMaxWidth().height(56.dp)
+                modifier        = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
             ) {
                 Row(
                     verticalAlignment     = Alignment.CenterVertically,
@@ -220,10 +243,10 @@ fun LoginScreen(
                     modifier              = Modifier.fillMaxSize()
                 ) {
                     Icon(
-                        painter           = painterResource(id = R.drawable.gugel_icon),
+                        painter            = painterResource(id = R.drawable.gugel_icon),
                         contentDescription = "Google Icon",
-                        tint              = Color.Unspecified,
-                        modifier          = Modifier.size(24.dp)
+                        tint               = Color.Unspecified,
+                        modifier           = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
@@ -239,18 +262,25 @@ fun LoginScreen(
                     )
                 }
             }
+
             Spacer(modifier = Modifier.height(32.dp))
+
             Row {
-                Text("Belum memiliki akun? ", color = White, fontSize = 14.sp)
+                Text(
+                    "Belum memiliki akun? ",
+                    color    = Color(0xFF1E3B8B).copy(alpha = 0.8f),
+                    fontSize = 14.sp
+                )
                 Text(
                     text           = "Register",
-                    color          = White,
+                    color          = Color(0xFF1E3B8B).copy(alpha = 0.8f),
                     fontSize       = 14.sp,
                     fontWeight     = FontWeight.Bold,
                     textDecoration = TextDecoration.Underline,
                     modifier       = Modifier.clickable { backStack.add(Routes.RegisterRoute) }
                 )
             }
+
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
@@ -265,22 +295,39 @@ private fun RoleToggle(selected: LoginRole, onSelect: (LoginRole) -> Unit) {
             .padding(4.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
-            RoleToggleButton("  Volunteer",  selected == LoginRole.VOLUNTEER,
-                { onSelect(LoginRole.VOLUNTEER) },  Modifier.weight(1f))
-            RoleToggleButton("  Organisasi", selected == LoginRole.ORGANISASI,
-                { onSelect(LoginRole.ORGANISASI) }, Modifier.weight(1f))
+            RoleToggleButton(
+                text       = "  Volunteer",
+                isSelected = selected == LoginRole.VOLUNTEER,
+                onClick    = { onSelect(LoginRole.VOLUNTEER) },
+                modifier   = Modifier.weight(1f)
+            )
+            RoleToggleButton(
+                text       = "  Organisasi",
+                isSelected = selected == LoginRole.ORGANISASI,
+                onClick    = { onSelect(LoginRole.ORGANISASI) },
+                modifier   = Modifier.weight(1f)
+            )
         }
     }
 }
 
 @Composable
-private fun RoleToggleButton(text: String, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier) {
+private fun RoleToggleButton(
+    text       : String,
+    isSelected : Boolean,
+    onClick    : () -> Unit,
+    modifier   : Modifier
+) {
     val bgColor   by animateColorAsState(
-        if (isSelected) Color.White else Color.Transparent,
-        tween(200), label = "toggle_bg")
+        targetValue = if (isSelected) Color.White else Color.Transparent,
+        animationSpec = tween(200),
+        label = "toggle_bg"
+    )
     val textColor by animateColorAsState(
-        if (isSelected) Color(0xFF24408F) else Color.White.copy(alpha = 0.7f),
-        tween(200), label = "toggle_text")
+        targetValue = if (isSelected) Color(0xFF24408F) else White.copy(alpha = 0.7f),
+        animationSpec = tween(200),
+        label = "toggle_text"
+    )
     Box(
         modifier = modifier
             .background(bgColor, RoundedCornerShape(50.dp))
@@ -288,18 +335,22 @@ private fun RoleToggleButton(text: String, isSelected: Boolean, onClick: () -> U
             .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(text, color = textColor, fontSize = 14.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+        Text(
+            text       = text,
+            color      = textColor,
+            fontSize   = 14.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+        )
     }
 }
 
 @Composable
 private fun textFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedTextColor      = White,
-    unfocusedTextColor    = White,
-    focusedBorderColor    = White.copy(alpha = 0.6f),
-    unfocusedBorderColor  = White.copy(alpha = 0.3f),
-    focusedContainerColor = InputBg,
+    focusedTextColor        = White,
+    unfocusedTextColor      = White,
+    focusedBorderColor      = White.copy(alpha = 0.6f),
+    unfocusedBorderColor    = White.copy(alpha = 0.3f),
+    focusedContainerColor   = InputBg,
     unfocusedContainerColor = InputBg,
-    cursorColor           = White
+    cursorColor             = White
 )

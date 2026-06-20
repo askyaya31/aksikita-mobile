@@ -1,17 +1,24 @@
 package com.example.prototypevolunteerapp.ui.screens.organizer
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.example.prototypevolunteerapp.core.Routes
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,20 +37,20 @@ import coil.compose.AsyncImage
 import com.example.prototypevolunteerapp.core.LocalBackStack
 import com.example.prototypevolunteerapp.data.remote.dto.RegistrationDto
 import com.example.prototypevolunteerapp.ui.components.AppFooter
-import kotlinx.coroutines.launch
 
-private val HeaderBgTop    = Color(0xFF86B8FF)
-private val HeaderBgMiddle = Color(0xFF5B9BD5)
-private val HeaderBgBottom = Color(0xFFCBE2FF)
-private val BgColor        = Color(0xFFF5F7FF)
+private val NavyDark       = Color(0xFF1E3A8A)
+private val PrimaryBlue    = Color(0xFF3B82F6)
+private val MediumBlue     = Color(0xFF60A5FA)
+private val LightBlue      = Color(0xFF93C5FD)
+private val PalestBlue     = Color(0xFFBFDBFE)
+private val BgColor        = Color(0xFFF0F5FF)
 private val CardWhite      = Color(0xFFFFFFFF)
-private val TextDark       = Color(0xFF1A1A2E)
-private val TextMuted      = Color(0xFF777799)
-private val DeclineRed     = Color(0xFFFF4D4D)
+private val TextDark       = Color(0xFF0F172A)
+private val TextMuted      = Color(0xFF64748B)
+private val DeclineRed     = Color(0xFFEF4444)
 private val AcceptGreen    = Color(0xFF16A34A)
-private val AccentBlue     = Color(0xFF5B9BD5)
-private val PresentBlue    = Color(0xFF1A4D7A)
-private val CardBgLightBlue= Color(0xFFEAF2FF)
+private val AccentBlue     = PrimaryBlue
+private val PresentBlue    = PrimaryBlue
 
 private val StatusAccepted = Triple(Color(0xFF16A34A), Color(0xFFDCFCE7), "Diterima")
 private val StatusRejected = Triple(Color(0xFFDC2626), Color(0xFFFEE2E2), "Ditolak")
@@ -122,7 +129,7 @@ fun CandidateListScreen(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = if (isAllSelected) Color(0xFFDBEAFE) else BgColor
+                                containerColor = if (isAllSelected) PalestBlue else BgColor
                             ),
                             onClick = { viewModel.onEventSelected(null) }
                         ) {
@@ -151,7 +158,7 @@ fun CandidateListScreen(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = if (isSelected) Color(0xFFDBEAFE) else BgColor
+                                containerColor = if (isSelected) PalestBlue else BgColor
                             ),
                             onClick = { viewModel.onEventSelected(event) }
                         ) {
@@ -190,38 +197,57 @@ fun CandidateListScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHost) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text("Volunteer Waiting", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.White)
-                        Text("Change their status", fontSize = 11.sp, color = Color.White.copy(alpha = 0.75f))
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { backStack.removeLastOrNull() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-                modifier = Modifier.background(Brush.linearGradient(listOf(HeaderBgMiddle, HeaderBgTop)))
-            )
-        },
-        containerColor = Color.Transparent
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier.fillMaxSize().background(
-                Brush.verticalGradient(
-                    0.0f to HeaderBgMiddle,
-                    0.25f to HeaderBgBottom,
-                    0.4f to BgColor,
-                    1.0f to BgColor
-                )
-            )
-        ) {
+        snackbarHost   = { SnackbarHost(snackbarHost) },
+        containerColor = BgColor
+    ) { _ ->
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Brush.linearGradient(listOf(NavyDark, PrimaryBlue)))
+                    .padding(horizontal = 16.dp)
+                    .padding(
+                        top    = WindowInsets.statusBars.asPaddingValues()
+                            .calculateTopPadding() + 8.dp,
+                        bottom = 20.dp
+                    )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.15f))
+                        .clickable { backStack.removeLastOrNull() }
+                        .align(Alignment.CenterStart),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Kembali",
+                        tint     = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Column(
+                    modifier            = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "Volunteer Waiting",
+                        color      = Color.White,
+                        fontSize   = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        "Change their status",
+                        color    = Color.White.copy(alpha = 0.75f),
+                        fontSize = 11.sp
+                    )
+                }
+            }
+
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
@@ -257,20 +283,6 @@ fun CandidateListScreen(
                     }
                 }
 
-                item(key = "summary") {
-                    val pending  = uiState.allRegistrations.count { it.status == "pending" }
-                    val accepted = uiState.allRegistrations.count { it.status == "confirmed" }
-                    val rejected = uiState.allRegistrations.count { it.status == "cancelled" }
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        SummaryChip("Pending",  pending,  StatusPending.first,  StatusPending.second,  Modifier.weight(1f))
-                        SummaryChip("Diterima", accepted, StatusAccepted.first, StatusAccepted.second, Modifier.weight(1f))
-                        SummaryChip("Ditolak",  rejected, StatusRejected.first, StatusRejected.second, Modifier.weight(1f))
-                    }
-                }
-
                 item(key = "filter_row") {
                     LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -290,8 +302,18 @@ fun CandidateListScreen(
                                     )
                                 },
                                 colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = AccentBlue,
-                                    selectedLabelColor = Color.White
+                                    selectedContainerColor  = NavyDark,
+                                    selectedLabelColor      = Color.White,
+                                    containerColor          = Color.White,
+                                    labelColor              = NavyDark
+                                ),
+                                border = FilterChipDefaults.filterChipBorder(
+                                    enabled        = true,
+                                    selected       = isActive,
+                                    borderColor    = NavyDark.copy(alpha = 0.4f),
+                                    selectedBorderColor = Color.Transparent,
+                                    borderWidth    = 1.dp,
+                                    selectedBorderWidth = 0.dp
                                 )
                             )
                         }
@@ -326,7 +348,7 @@ fun CandidateListScreen(
                             eventTitle = eventTitle,
                             onConfirm  = { viewModel.onConfirmRegistration(reg.id) },
                             onReject   = { viewModel.onRejectRegistration(reg.id) },
-                            onAttend   = { viewModel.onAttendRegistration(reg.id) }
+                            onDetail   = { backStack.add(Routes.CandidateDetailRoute(candidateId = reg.id)) }
                         )
                     }
                 }
@@ -344,55 +366,20 @@ private fun VolunteerWaitingCard(
     eventTitle: String,
     onConfirm: () -> Unit,
     onReject:  () -> Unit,
-    onAttend:  () -> Unit
+    onDetail:  () -> Unit
 ) {
     val user    = reg.user
     val profile = user?.volunteer_profile
-    var showDetail by remember { mutableStateOf(false) }
-
-    if (showDetail) {
-        ModalBottomSheet(
-            onDismissRequest = { showDetail = false },
-            containerColor   = CardWhite,
-            shape            = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 40.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text("Detail Relawan", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = TextDark)
-                HorizontalDivider(color = Color(0xFFEEEEEE))
-
-                val location = profile?.city ?: profile?.province ?: "-"
-                DetailRow(Icons.Default.LocationOn,   "Asal Kota", location)
-                DetailRow(Icons.Default.Phone,        "Telepon",   user?.phone ?: "-")
-                DetailRow(Icons.Default.CalendarToday,"Tgl Lahir", profile?.date_of_birth ?: "-")
-
-                if (!profile?.bio.isNullOrBlank()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(BgColor, RoundedCornerShape(12.dp))
-                            .padding(14.dp)
-                    ) {
-                        Text("Bio", fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.SemiBold)
-                        Text(profile!!.bio!!, fontSize = 13.sp, color = TextDark)
-                    }
-                }
-            }
-        }
-    }
 
     Card(
         modifier  = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
         shape     = RoundedCornerShape(16.dp),
-        colors    = CardDefaults.cardColors(containerColor = CardBgLightBlue),
-        elevation = CardDefaults.cardElevation(0.dp)
+        colors    = CardDefaults.cardColors(containerColor = CardWhite),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                // ── Avatar ──
+
                 val avatarUrl = profile?.avatar ?: user?.avatar
                 Box(
                     modifier = Modifier
@@ -422,14 +409,27 @@ private fun VolunteerWaitingCard(
                 Spacer(Modifier.width(16.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = user?.name ?: "Volunteer",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextDark,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = user?.name ?: "Volunteer",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextDark,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        val (sc, sb, st) = statusMeta(reg.status)
+                        Surface(shape = RoundedCornerShape(6.dp), color = sb) {
+                            Text(
+                                st,
+                                fontSize = 10.sp,
+                                color = sc,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
                     Spacer(Modifier.height(4.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -460,70 +460,40 @@ private fun VolunteerWaitingCard(
                 }
 
                 IconButton(
-                    onClick = { showDetail = true },
+                    onClick = onDetail,
                     modifier = Modifier.size(32.dp).background(AccentBlue.copy(alpha = 0.1f), CircleShape)
                 ) {
                     Icon(Icons.Default.Info, null, tint = AccentBlue, modifier = Modifier.size(18.dp))
                 }
             }
+            if (reg.status == "pending") {
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onReject,
+                        modifier = Modifier.weight(1f).height(36.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = DeclineRed),
+                        border = BorderStroke(1.dp, DeclineRed.copy(alpha = 0.5f)),
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) { Text("Decline", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
 
-            Spacer(Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val (sc, sb, st) = statusMeta(reg.status)
-                Surface(shape = RoundedCornerShape(8.dp), color = sb) {
-                    Text(
-                        st,
-                        fontSize = 11.sp,
-                        color = sc,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
-
-                Row(horizontalArrangement = Arrangement.End) {
-                    when (reg.status) {
-                        "pending" -> {
-                            OutlinedButton(
-                                onClick = onReject,
-                                modifier = Modifier.height(32.dp),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = DeclineRed),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, DeclineRed.copy(alpha = 0.5f)),
-                                contentPadding = PaddingValues(horizontal = 16.dp)
-                            ) { Text("Decline", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
-
-                            Spacer(Modifier.width(8.dp))
-
-                            Button(
-                                onClick = onConfirm,
-                                modifier = Modifier.height(32.dp),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = AcceptGreen),
-                                contentPadding = PaddingValues(horizontal = 16.dp)
-                            ) { Text("Accept", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
-                        }
-                        "confirmed" -> {
-                            Button(
-                                onClick = onAttend,
-                                modifier = Modifier.height(32.dp),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = PresentBlue),
-                                contentPadding = PaddingValues(horizontal = 16.dp)
-                            ) { Text("Tandai Hadir", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
-                        }
-                    }
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier.weight(1f).height(36.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AcceptGreen),
+                        contentPadding = PaddingValues(horizontal = 16.dp)
+                    ) { Text("Accept", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
                 }
             }
         }
     }
 }
 
-// Helpers
 private fun statusMeta(status: String): Triple<Color, Color, String> = when (status) {
     "confirmed" -> StatusAccepted
     "cancelled" -> StatusRejected
@@ -547,16 +517,34 @@ private fun DetailRow(icon: ImageVector, label: String, value: String) {
 }
 
 @Composable
-private fun SummaryChip(label: String, count: Int, textColor: Color, bgColor: Color, modifier: Modifier) {
-    Box(
-        modifier = modifier
-            .background(bgColor, RoundedCornerShape(10.dp))
-            .padding(vertical = 8.dp),
-        contentAlignment = Alignment.Center
+private fun SheetSectionTitle(title: String) {
+    Text(
+        title.uppercase(),
+        fontSize      = 11.sp,
+        fontWeight    = FontWeight.SemiBold,
+        color         = TextMuted,
+        letterSpacing = 0.8.sp
+    )
+}
+
+@Composable
+private fun SheetInfoRow(icon: ImageVector, label: String, value: String) {
+    Row(
+        verticalAlignment     = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("$count", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = textColor)
-            Text(label, fontSize = 11.sp, color = textColor)
+        Box(
+            modifier         = Modifier
+                .size(34.dp)
+                .background(AccentBlue.copy(alpha = 0.1f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = AccentBlue, modifier = Modifier.size(16.dp))
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, fontSize = 10.sp, color = TextMuted)
+            Text(value, fontSize = 13.sp, color = TextDark,
+                fontWeight = FontWeight.Medium, lineHeight = 18.sp)
         }
     }
 }

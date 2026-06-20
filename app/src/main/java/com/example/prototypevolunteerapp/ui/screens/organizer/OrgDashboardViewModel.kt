@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class OrgTab { DASHBOARD, KANDIDAT, TAMBAH, STATISTIK, PROFIL }
+enum class OrgTab { DASHBOARD, KEGIATAN, TAMBAH, PESAN, PROFIL }
 
 data class OrgDashboardUiState(
     val events:              List<EventDto> = emptyList(),
@@ -24,7 +24,6 @@ data class OrgDashboardUiState(
     val totalSubmissions:    Int     = 0,
     val isLoading:           Boolean = false,
     val error:               String? = null,
-    val showLogoutDialog:    Boolean = false,
     val showStatsSheet:      Boolean = false,
     val sectionsVisible:     Boolean = false,
     val selectedTab:         OrgTab  = OrgTab.DASHBOARD,
@@ -140,10 +139,8 @@ class OrgDashboardViewModel @Inject constructor(
 
     fun onEventStatusFilterChange(status: String?) = onEventStatusSelected(status)
 
-    fun onLogoutDialogShow()    { _uiState.value = _uiState.value.copy(showLogoutDialog = true) }
-    fun onLogoutDialogDismiss() { _uiState.value = _uiState.value.copy(showLogoutDialog = false) }
-    fun onStatsSheetShow()      { _uiState.value = _uiState.value.copy(showStatsSheet = true) }
-    fun onStatsSheetDismiss()   { _uiState.value = _uiState.value.copy(showStatsSheet = false) }
+    fun onStatsSheetShow()    { _uiState.value = _uiState.value.copy(showStatsSheet = true) }
+    fun onStatsSheetDismiss() { _uiState.value = _uiState.value.copy(showStatsSheet = false) }
 
     fun logout() {
         viewModelScope.launch {

@@ -13,13 +13,14 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.outlined.Chat
+import com.example.prototypevolunteerapp.core.Routes
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,7 +33,6 @@ import com.example.prototypevolunteerapp.core.LocalBackStack
 import com.example.prototypevolunteerapp.core.OrganizerSession
 import com.example.prototypevolunteerapp.data.remote.ApiService
 import com.example.prototypevolunteerapp.data.remote.dto.RegistrationDto
-import com.example.prototypevolunteerapp.data.remote.dto.UserDto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -140,18 +140,24 @@ class CandidateDetailViewModel @Inject constructor(
     fun onActionHandled() { _actionSuccess.value = null }
     fun onErrorDismissed() { _error.value = null }
 }
-
-private val HeaderTop    = Color(0xFF86B8FF)
-private val HeaderMid    = Color(0xFF5B9BD5)
-private val HeaderBottom = Color(0xFFCBE2FF)
-private val BgColor      = Color(0xFFF5F7FF)
-private val CardWhite    = Color(0xFFFFFFFF)
-private val AccentBlue   = Color(0xFF5B9BD5)
-private val DeepBlue     = Color(0xFF1A4D7A)
-private val TextDark     = Color(0xFF1A1A2E)
-private val TextMuted    = Color(0xFF777799)
-private val DeclineRed   = Color(0xFFFF4D4D)
-private val AcceptGreen  = Color(0xFF16A34A)
+private val NavyDark    = Color(0xFF2850C4)
+private val PrimaryBlue = Color(0xFF205CCB)
+private val MediumBlue  = Color(0xFF60A5FA)
+private val PalestBlue  = Color(0xFFBFDBFE)
+private val BgColor     = Color(0xFFF0F5FF)
+private val CardWhite   = Color(0xFFFFFFFF)
+private val AccentBlue  = PrimaryBlue
+private val DeepBlue    = NavyDark
+private val TextDark    = Color(0xFF0F172A)
+private val TextMuted   = Color(0xFF64748B)
+private val DeclineRed  = Color(0xFFF67979)
+private val AcceptGreen = Color(0xFF3DAD54)
+private val PendingAmber  = Color(0xFFF39F5F)
+private val AcceptGreenBg = Color(0xFFDCFDE9)
+private val DeclineRedBg  = Color(0xFFFEE2E2)
+private val AttendedBlueBg = Color(0xFFDBEAFE)
+private val PendingAmberBg = Color(0xFFFEF3C7)
+private val InterestBlueBg = Color(0xFFDBEAFE)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -227,7 +233,6 @@ fun CandidateDetailScreen(
             }
         )
     }
-
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -244,7 +249,7 @@ fun CandidateDetailScreen(
                     }
                 },
                 colors   = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-                modifier = Modifier.background(Brush.linearGradient(listOf(HeaderMid, HeaderTop)))
+                modifier = Modifier.background(Brush.linearGradient(listOf(NavyDark, PrimaryBlue)))
             )
         },
         containerColor = Color.Transparent
@@ -252,14 +257,7 @@ fun CandidateDetailScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        0.0f to HeaderMid,
-                        0.2f to HeaderBottom,
-                        0.35f to BgColor,
-                        1.0f to BgColor
-                    )
-                )
+                .background(BgColor)
         ) {
             when {
                 isLoading -> {
@@ -292,74 +290,148 @@ fun CandidateDetailScreen(
                         contentPadding      = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+
                         item(key = "hero") {
                             Card(
-                                modifier  = Modifier.fillMaxWidth(),
+                                modifier  = Modifier
+                                    .fillMaxWidth(),
                                 shape     = RoundedCornerShape(20.dp),
                                 colors    = CardDefaults.cardColors(containerColor = CardWhite),
-                                elevation = CardDefaults.cardElevation(2.dp)
+                                elevation = CardDefaults.cardElevation(3.dp)
                             ) {
-                                Column(
-                                    modifier            = Modifier.fillMaxWidth().padding(20.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(96.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFFE0EDFF))
-                                            .border(3.dp, AccentBlue.copy(alpha = 0.3f), CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        val avatarUrl = vp?.avatar ?: volunteer?.avatar
-                                        if (!avatarUrl.isNullOrBlank()) {
-                                            AsyncImage(
-                                                model              = avatarUrl,
-                                                contentDescription = volunteer?.name,
-                                                contentScale       = ContentScale.Crop,
-                                                modifier           = Modifier.fillMaxSize().clip(CircleShape)
-                                            )
-                                        } else {
-                                            Text(
-                                                volunteer?.name?.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
-                                                fontSize   = 36.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color      = AccentBlue
-                                            )
+                                Column(modifier = Modifier.fillMaxWidth()) {
+
+                                    Box(modifier = Modifier.fillMaxWidth()) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(90.dp)
+                                                .background(
+                                                    Brush.linearGradient(listOf(NavyDark, PrimaryBlue, MediumBlue))
+                                                )
+                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .align(Alignment.BottomCenter)
+                                                .offset(y = 44.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(88.dp)
+                                                    .clip(CircleShape)
+                                                    .background(CardWhite)
+                                                    .border(3.dp, CardWhite, CircleShape),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                val avatarUrl = vp?.avatar ?: volunteer?.avatar
+                                                if (!avatarUrl.isNullOrBlank()) {
+                                                    AsyncImage(
+                                                        model              = avatarUrl,
+                                                        contentDescription = volunteer?.name,
+                                                        contentScale       = ContentScale.Crop,
+                                                        modifier           = Modifier.fillMaxSize().clip(CircleShape)
+                                                    )
+                                                } else {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .fillMaxSize()
+                                                            .background(
+                                                                Brush.linearGradient(listOf(NavyDark, PrimaryBlue)),
+                                                                CircleShape
+                                                            ),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Text(
+                                                            volunteer?.name?.firstOrNull()?.uppercaseChar()?.toString() ?: "?",
+                                                            fontSize   = 34.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color      = Color.White
+                                                        )
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
 
-                                    Spacer(Modifier.height(4.dp))
+                                    Spacer(Modifier.height(52.dp))
 
-                                    Text(
-                                        volunteer?.name ?: "Volunteer",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize   = 20.sp,
-                                        color      = TextDark
-                                    )
-
-                                    val kotaInstitusi = listOfNotNull(vp?.city, vp?.province).joinToString(", ")
-                                    if (kotaInstitusi.isNotBlank()) {
-                                        Text(kotaInstitusi, fontSize = 13.sp, color = TextMuted)
-                                    }
-
-                                    Spacer(Modifier.height(4.dp))
-
-                                    val (statusText, statusColor, statusBg) = when (reg.status) {
-                                        "confirmed" -> Triple("Diterima", Color(0xFF16A34A), Color(0xFFDCFCE7))
-                                        "cancelled" -> Triple("Ditolak",  Color(0xFFDC2626), Color(0xFFFEE2E2))
-                                        "attended"  -> Triple("Hadir",    DeepBlue,          Color(0xFFDBEAFE))
-                                        else        -> Triple("Pending",  Color(0xFFB45309), Color(0xFFFEF3C7))
-                                    }
-                                    Surface(shape = RoundedCornerShape(20.dp), color = statusBg) {
+                                    Column(
+                                        modifier            = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 20.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(5.dp)
+                                    ) {
                                         Text(
-                                            statusText,
-                                            fontSize   = 12.sp,
-                                            color      = statusColor,
-                                            fontWeight = FontWeight.SemiBold,
-                                            modifier   = Modifier.padding(horizontal = 16.dp, vertical = 5.dp)
+                                            volunteer?.name ?: "Volunteer",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize   = 20.sp,
+                                            color      = TextDark
                                         )
+
+                                        val kotaInstitusi = listOfNotNull(vp?.city, vp?.province).joinToString(", ")
+                                        if (kotaInstitusi.isNotBlank()) {
+                                            Row(
+                                                verticalAlignment     = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                            ) {
+                                                Icon(Icons.Default.LocationOn, null,
+                                                    tint     = AccentBlue,
+                                                    modifier = Modifier.size(13.dp))
+                                                Text(kotaInstitusi, fontSize = 13.sp, color = TextMuted)
+                                            }
+                                        }
+
+                                        val (statusText, statusColor, statusBg, statusIcon) = when (reg.status) {
+                                            "confirmed" -> arrayOf("Diterima", Color(0xFF166534), AcceptGreenBg,  Icons.Default.CheckCircle)
+                                            "cancelled" -> arrayOf("Ditolak",  Color(0xFF991B1B), DeclineRedBg,   Icons.Default.Cancel)
+                                            "attended"  -> arrayOf("Hadir",    Color(0xFF1E3A8A), AttendedBlueBg, Icons.Default.HowToReg)
+                                            else        -> arrayOf("Pending",  Color(0xFF92400E), PendingAmberBg, Icons.Default.HourglassEmpty)
+                                        }
+                                        @Suppress("UNCHECKED_CAST")
+                                        Surface(
+                                            shape = RoundedCornerShape(99.dp),
+                                            color = statusBg as Color
+                                        ) {
+                                            Row(
+                                                modifier              = Modifier.padding(horizontal = 14.dp, vertical = 5.dp),
+                                                verticalAlignment     = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                            ) {
+                                                Icon(
+                                                    statusIcon as androidx.compose.ui.graphics.vector.ImageVector,
+                                                    null,
+                                                    tint     = statusColor as Color,
+                                                    modifier = Modifier.size(12.dp)
+                                                )
+                                                Text(
+                                                    statusText as String,
+                                                    fontSize   = 12.sp,
+                                                    color      = statusColor,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(Modifier.height(16.dp))
+                                    HorizontalDivider(color = Color(0xFFEEEEEE), thickness = 0.8.dp)
+
+                                    val stats = volunteer?.volunteer_stats
+                                    if (stats != null) {
+                                        Row(
+                                            modifier              = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 14.dp),
+                                            horizontalArrangement = Arrangement.SpaceEvenly
+                                        ) {
+                                            HeroStat("${stats.total_daftar}",  "Total Daftar", NavyDark)
+                                            VerticalDivider(modifier = Modifier.height(36.dp), color = Color(0xFFEEEEEE))
+                                            HeroStat("${stats.total_confirmed}", "Diterima",  NavyDark)
+                                            VerticalDivider(modifier = Modifier.height(36.dp), color = Color(0xFFEEEEEE))
+                                            HeroStat("${stats.total_hadir}",   "Hadir",       NavyDark)
+                                        }
+                                        HorizontalDivider(color = Color(0xFFEEEEEE), thickness = 0.8.dp)
                                     }
                                 }
                             }
@@ -387,7 +459,7 @@ fun CandidateDetailScreen(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .background(Color(0xFFF0F5FF), RoundedCornerShape(8.dp))
+                                            .background(BgColor, RoundedCornerShape(8.dp))
                                             .padding(12.dp)
                                     ) {
                                         Box(
@@ -398,11 +470,10 @@ fun CandidateDetailScreen(
                                         )
                                         Spacer(Modifier.width(10.dp))
                                         Text(
-                                            "\"${vp!!.bio!!}\"",
+                                            vp!!.bio!!,
                                             fontSize   = 13.sp,
                                             color      = TextDark.copy(alpha = 0.8f),
-                                            lineHeight = 20.sp,
-                                            fontStyle  = FontStyle.Italic
+                                            lineHeight = 20.sp
                                         )
                                     }
                                 }
@@ -437,6 +508,51 @@ fun CandidateDetailScreen(
                             }
                         }
 
+                        val history = volunteer?.registration_history
+                            ?.filter { it.status == "attended" || it.status == "confirmed" }
+                        if (!history.isNullOrEmpty()) {
+                            item(key = "history") {
+                                DetailSectionCard(title = "Riwayat Kegiatan") {
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        history.forEachIndexed { index, h ->
+                                            val (hColor, hBg) = when (h.status) {
+                                                "confirmed" -> AcceptGreen to AcceptGreenBg
+                                                "attended"  -> DeepBlue    to AttendedBlueBg
+                                                "cancelled" -> DeclineRed  to DeclineRedBg
+                                                else        -> PendingAmber to PendingAmberBg
+                                            }
+                                            val hLabel = when (h.status) {
+                                                "confirmed" -> "Diterima"
+                                                "attended"  -> "Hadir"
+                                                "cancelled" -> "Dibatalkan"
+                                                else        -> "Pending"
+                                            }
+                                            Column(modifier = Modifier.fillMaxWidth()) {
+                                                Text(
+                                                    h.event_title ?: "-",
+                                                    fontSize   = 12.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color      = TextDark,
+                                                    maxLines   = 2,
+                                                    lineHeight = 18.sp
+                                                )
+                                                val sub = listOfNotNull(
+                                                    h.start_date?.let { DateUtils.formatDate(it) },
+                                                    h.city
+                                                ).joinToString(" · ")
+                                                if (sub.isNotBlank()) {
+                                                    Text(sub, fontSize = 11.sp, color = TextMuted)
+                                                }
+                                            }
+                                            if (index < history.lastIndex) {
+                                                HorizontalDivider(color = Color(0xFFEEEEEE), thickness = 0.5.dp)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         item(key = "event") {
                             DetailSectionCard(title = "Kegiatan yang Didaftari") {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -463,8 +579,7 @@ fun CandidateDetailScreen(
                                 }
                             }
                         }
-
-                        if (reg.status == "pending" || reg.status == "confirmed") {
+                        if (reg.status == "pending" || reg.status == "confirmed" || reg.status == "attended") {
                             item(key = "actions") {
                                 when (reg.status) {
                                     "pending" -> {
@@ -501,18 +616,65 @@ fun CandidateDetailScreen(
                                         }
                                     }
                                     "confirmed" -> {
-                                        Button(
-                                            onClick  = { viewModel.onMarkAttend(reg.id) },
-                                            enabled  = !actionLoad,
-                                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                                            shape    = RoundedCornerShape(12.dp),
-                                            colors   = ButtonDefaults.buttonColors(containerColor = DeepBlue)
-                                        ) {
-                                            if (actionLoad) CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-                                            else {
-                                                Icon(Icons.Default.HowToReg, null, modifier = Modifier.size(16.dp))
+                                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                            if (reg.chat_room_id != null) {
+                                                OutlinedButton(
+                                                    onClick  = {
+                                                        backStack.add(
+                                                            Routes.ChatRoomRoute(
+                                                                roomId        = reg.chat_room_id,
+                                                                eventTitle    = event?.title ?: "Kegiatan",
+                                                                organizerName = volunteer?.name ?: "Volunteer",
+                                                                isOrganizer   = true
+                                                            )
+                                                        )
+                                                    },
+                                                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                                                    shape    = RoundedCornerShape(12.dp),
+                                                    colors   = ButtonDefaults.outlinedButtonColors(contentColor = NavyDark),
+                                                    border   = BorderStroke(1.5.dp, NavyDark.copy(alpha = 0.5f))
+                                                ) {
+                                                    Icon(Icons.Outlined.Chat, null, modifier = Modifier.size(16.dp))
+                                                    Spacer(Modifier.width(6.dp))
+                                                    Text("Buka Chat dengan Volunteer", fontWeight = FontWeight.Bold)
+                                                }
+                                            }
+                                            Button(
+                                                onClick  = { viewModel.onMarkAttend(reg.id) },
+                                                enabled  = !actionLoad,
+                                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                                shape    = RoundedCornerShape(12.dp),
+                                                colors   = ButtonDefaults.buttonColors(containerColor = DeepBlue)
+                                            ) {
+                                                if (actionLoad) CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                                                else {
+                                                    Spacer(Modifier.width(6.dp))
+                                                    Text("Tandai Hadir", fontWeight = FontWeight.Bold)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    "attended" -> {
+                                        if (reg.chat_room_id != null) {
+                                            OutlinedButton(
+                                                onClick  = {
+                                                    backStack.add(
+                                                        Routes.ChatRoomRoute(
+                                                            roomId        = reg.chat_room_id,
+                                                            eventTitle    = event?.title ?: "Kegiatan",
+                                                            organizerName = volunteer?.name ?: "Volunteer",
+                                                            isOrganizer   = true
+                                                        )
+                                                    )
+                                                },
+                                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                                shape    = RoundedCornerShape(12.dp),
+                                                colors   = ButtonDefaults.outlinedButtonColors(contentColor = NavyDark),
+                                                border   = BorderStroke(1.5.dp, NavyDark.copy(alpha = 0.5f))
+                                            ) {
+                                                Icon(Icons.Outlined.Chat, null, modifier = Modifier.size(16.dp))
                                                 Spacer(Modifier.width(6.dp))
-                                                Text("Tandai Hadir", fontWeight = FontWeight.Bold)
+                                                Text("Chat dengan Volunteer", fontWeight = FontWeight.Bold)
                                             }
                                         }
                                     }
@@ -523,6 +685,17 @@ fun CandidateDetailScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun HeroStat(value: String, label: String, color: Color) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(value, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = color)
+        Text(label, fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -574,23 +747,41 @@ private fun DetailInfoRow(
 
 @Composable
 private fun VolChip(text: String, isSkill: Boolean) {
-    val bgColor      = if (isSkill) Color(0xFFE0EDFF) else Color(0xFFFFF3E0)
-    val contentColor = if (isSkill) AccentBlue        else Color(0xFFF57F17)
-    val borderColor  = if (isSkill) AccentBlue.copy(alpha = 0.3f) else Color(0xFFFFCC80)
-    val icon         = if (isSkill) Icons.Default.Star else Icons.Default.LocalFireDepartment
+    val bgColor      = if (isSkill) PalestBlue else InterestBlueBg
+    val contentColor = if (isSkill) NavyDark else PrimaryBlue
+    val borderColor  = if (isSkill) AccentBlue.copy(alpha = 0.3f) else NavyDark.copy(alpha = 0.25f)
 
     Surface(
         shape  = RoundedCornerShape(8.dp),
         color  = bgColor,
         border = BorderStroke(1.dp, borderColor)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier          = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-        ) {
-            Icon(icon, null, modifier = Modifier.size(11.dp), tint = contentColor)
-            Spacer(Modifier.width(4.dp))
-            Text(text, fontSize = 12.sp, color = contentColor, fontWeight = FontWeight.SemiBold)
-        }
+        Text(
+            text,
+            fontSize   = 12.sp,
+            color      = contentColor,
+            fontWeight = FontWeight.SemiBold,
+            modifier   = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+        )
+    }
+}
+
+@Composable
+private fun StatBox(
+    modifier: Modifier,
+    value:    String,
+    label:    String,
+    valueCl:  Color,
+    bgColor:  Color
+) {
+    Column(
+        modifier            = modifier
+            .background(bgColor, RoundedCornerShape(10.dp))
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        Text(value, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = valueCl)
+        Text(label, fontSize = 10.sp, color = valueCl.copy(alpha = 0.8f), fontWeight = FontWeight.Medium)
     }
 }

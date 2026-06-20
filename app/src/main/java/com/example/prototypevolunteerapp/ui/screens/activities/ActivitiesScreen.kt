@@ -90,7 +90,7 @@ fun ActivitiesScreen(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                         .background(Color.White)
-                        .clickable(enabled = false) {} // block dismiss on content click
+                        .clickable(enabled = false) {}
                         .padding(horizontal = 24.dp)
                         .padding(top = 12.dp, bottom = 32.dp)
                 ) {
@@ -379,7 +379,6 @@ fun ActivitiesScreen(
                 )
             )
 
-            // Filter Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -388,7 +387,6 @@ fun ActivitiesScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Pill Kota
                 val citySelected = uiState.selectedCity.isNotBlank()
                 Surface(
                     onClick = { cityInput = uiState.selectedCity; showCityDialog = true },
@@ -440,8 +438,6 @@ fun ActivitiesScreen(
                         }
                     }
                 }
-
-                // Pill Kategori
                 val categoryActive = uiState.selectedCategory != null
                 Surface(
                     onClick = { showFilterSheet = true },
@@ -604,7 +600,6 @@ fun ActivitiesScreen(
     }
 }
 
-// Category Sheet Item
 @Composable
 private fun CategorySheetItem(
     label:      String,
@@ -638,7 +633,6 @@ private fun CategorySheetItem(
     }
 }
 
-// Activity Card
 @Composable
 private fun ActivityBigCard(
     activity: ActivityData,

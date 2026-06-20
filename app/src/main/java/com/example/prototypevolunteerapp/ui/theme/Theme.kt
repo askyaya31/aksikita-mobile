@@ -8,12 +8,12 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
-    primary = PrimaryColor,
-    secondary = SecondaryColor,
-    background = BackgroundColor,
-    surface = SurfaceColor,
-    onPrimary = OnPrimaryColor,
-    onSurface = OnSurfaceColor
+    primary    = Navy,
+    secondary  = Blue,
+    background = BgScreen,
+    surface    = Surface,
+    onPrimary  = Surface,
+    onSurface  = Ink
 )
 
 @Composable
@@ -25,7 +25,7 @@ fun AksiKitaTheme(content: @Composable () -> Unit) {
     }
     MaterialTheme(
         colorScheme = LightColorScheme,
-        typography = Type,
-        content = content
+        typography  = Type,
+        content     = content
     )
 }

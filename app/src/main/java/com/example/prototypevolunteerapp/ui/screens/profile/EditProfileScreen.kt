@@ -51,11 +51,8 @@ fun EditProfileScreen(
     val backStack = LocalBackStack.current
     val uiState  by viewModel.uiState.collectAsState()
     val snackbar  = remember { SnackbarHostState() }
-
     var showSaveDialog   by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
-
-    // Digunakan untuk mendeteksi apakah ada perubahan yang belum disimpan
     var initialName         by remember { mutableStateOf<String?>(null) }
     var initialPhone        by remember { mutableStateOf<String?>(null) }
     var initialAbout        by remember { mutableStateOf<String?>(null) }
@@ -80,7 +77,6 @@ fun EditProfileScreen(
         }
     }
 
-    // Cek apakah ada perubahan yang belum disimpan
     val hasUnsavedChanges = remember(
         uiState.name, uiState.phone, uiState.about, uiState.birthDate,
         uiState.gender, uiState.city, uiState.province,
@@ -100,12 +96,10 @@ fun EditProfileScreen(
                 )
     }
 
-    // Tampilkan dialog jika ada perubahan
     BackHandler(enabled = hasUnsavedChanges) {
         showDiscardDialog = true
     }
 
-    // Navigasi balik otomatis setelah berhasil disimpan
     LaunchedEffect(uiState.isSaved) {
         if (uiState.isSaved) {
             viewModel.onSavedHandled()
@@ -164,7 +158,6 @@ fun EditProfileScreen(
                 )
             },
             confirmButton = {
-                // Tombol konfirmasi
                 Button(
                     onClick  = { showSaveDialog = false; viewModel.onSave() },
                     modifier = Modifier.fillMaxWidth().height(46.dp),
@@ -177,7 +170,6 @@ fun EditProfileScreen(
                 }
             },
             dismissButton = {
-                // Tombol batal
                 OutlinedButton(
                     onClick  = { showSaveDialog = false },
                     modifier = Modifier.fillMaxWidth().height(46.dp),
@@ -233,7 +225,6 @@ fun EditProfileScreen(
                 )
             },
             confirmButton = {
-                // Tombol keluar
                 Button(
                     onClick  = { showDiscardDialog = false; backStack.removeLastOrNull() },
                     modifier = Modifier.fillMaxWidth().height(46.dp),
@@ -246,7 +237,6 @@ fun EditProfileScreen(
                 }
             },
             dismissButton = {
-                // Tombol lanjut edit
                 OutlinedButton(
                     onClick  = { showDiscardDialog = false },
                     modifier = Modifier.fillMaxWidth().height(46.dp),
@@ -272,7 +262,6 @@ fun EditProfileScreen(
                     )
                 },
                 navigationIcon = {
-                    // Back button juga cek perubahan sebelum keluar
                     IconButton(onClick = {
                         if (hasUnsavedChanges) showDiscardDialog = true
                         else backStack.removeLastOrNull()
@@ -422,8 +411,6 @@ fun EditProfileScreen(
                         }
                     }
                 }
-
-                // Section Data Akun
                 ProfileSection(title = "Data Akun") {
                     ProfileField(
                         label         = "Nama Lengkap",
@@ -439,9 +426,9 @@ fun EditProfileScreen(
                         icon          = Icons.Default.Phone,
                         placeholder   = "08xxxxxxxxxx"
                     )
-                    // Email tidak bisa diubah
+
                     OutlinedTextField(
-                        value         = "Email tidak dapat diubah",
+                        value = uiState.email,
                         onValueChange = {},
                         label         = { Text("Email", fontSize = 13.sp) },
                         leadingIcon   = {
@@ -462,7 +449,6 @@ fun EditProfileScreen(
                     )
                 }
 
-                // Section Data Pribadi
                 ProfileSection(title = "Data Pribadi") {
                     ProfileField(
                         label         = "Tanggal Lahir",
@@ -520,8 +506,6 @@ fun EditProfileScreen(
                         modifier = Modifier.padding(start = 4.dp)
                     )
                 }
-
-                // Section Keahlian & Minat
                 ProfileSection(title = "Keahlian & Minat") {
                     ProfileField(
                         label         = "Keahlian",
@@ -555,8 +539,6 @@ fun EditProfileScreen(
                     )
                     TagsPreview(raw = uiState.interestsRaw)
                 }
-
-                // Simpan
                 Button(
                     onClick  = { showSaveDialog = true },
                     enabled  = !uiState.isSaving,
@@ -584,8 +566,6 @@ fun EditProfileScreen(
                         )
                     }
                 }
-
-                // Tombol batal
                 OutlinedButton(
                     onClick  = {
                         if (hasUnsavedChanges) showDiscardDialog = true

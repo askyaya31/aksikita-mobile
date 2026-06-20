@@ -72,9 +72,22 @@ class ProfileViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
-
+    private val _unreadChatCount = MutableStateFlow(0)
+    val unreadChatCount: StateFlow<Int> = _unreadChatCount.asStateFlow()
     init {
         loadProfile()
+        loadUnreadChatCount()
+    }
+    private fun loadUnreadChatCount() {
+        viewModelScope.launch {
+            try {
+                val response = apiService.getChatUnreadCount()
+                if (response.isSuccessful) {
+                    _unreadChatCount.value = response.body()?.unread_count ?: 0
+                }
+            } catch (_: Exception) {
+            }
+        }
     }
 
     private fun loadProfile() {
@@ -100,6 +113,9 @@ class ProfileViewModel @Inject constructor(
 
                     userSession.updateAvatarUrl(resolvedAvatar)
                     sessionPreferences.updateAvatarUrl(resolvedAvatar)
+                    if (vp != null) {
+                        userSession.updateVolunteerProfileDto(vp)
+                    }
 
                     _uiState.value = ProfileUiState(
                         userName           = serverUser.name,
@@ -159,6 +175,12 @@ class ProfileViewModel @Inject constructor(
                 if (savedResp.isSuccessful) {
                     _uiState.value = _uiState.value.copy(
                         savedCount = savedResp.body()?.data?.size ?: 0
+                    )
+                }
+                val likedResp = apiService.getLikedEvents()
+                if (likedResp.isSuccessful) {
+                    _uiState.value = _uiState.value.copy(
+                        likedCount = likedResp.body()?.data?.size ?: 0
                     )
                 }
             } catch (_: Exception) {}

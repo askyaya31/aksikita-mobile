@@ -16,6 +16,8 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
+import com.example.prototypevolunteerapp.data.preferences.SessionPreferences
+import com.example.prototypevolunteerapp.data.model.NotificationRepository
 
 data class OrgProfileState(
     val email:              String  = "",
@@ -33,15 +35,17 @@ data class OrgProfileState(
     val isLoading:          Boolean = false,
     val isSaving:           Boolean = false,
     val isSaved:            Boolean = false,
-    val errorMessage:       String? = null
+    val errorMessage:       String? = null,
+    val showLogoutDialog: Boolean = false
 )
 
 @HiltViewModel
 class OrgProfileViewModel @Inject constructor(
-    private val apiService:       ApiService,
-    private val organizerSession: OrganizerSession
+    private val apiService:             ApiService,
+    private val organizerSession:       OrganizerSession,
+    private val sessionPreferences:     SessionPreferences,
+    private val notificationRepository: NotificationRepository
 ) : ViewModel() {
-
     private val _profileState = MutableStateFlow(OrgProfileState())
     val profileState: StateFlow<OrgProfileState> = _profileState.asStateFlow()
 
@@ -101,6 +105,7 @@ class OrgProfileViewModel @Inject constructor(
     fun updateLogoUri(uri: Uri?) {
         _profileState.value = _profileState.value.copy(logoUri = uri)
     }
+
     fun saveProfile() {
         val s = _profileState.value
         viewModelScope.launch {
@@ -154,6 +159,17 @@ class OrgProfileViewModel @Inject constructor(
 
     fun onSavedHandled()   { _profileState.value = _profileState.value.copy(isSaved = false) }
     fun onErrorDismissed() { _profileState.value = _profileState.value.copy(errorMessage = null) }
+    fun onLogoutDialogShow()    { _profileState.value = _profileState.value.copy(showLogoutDialog = true) }
+    fun onLogoutDialogDismiss() { _profileState.value = _profileState.value.copy(showLogoutDialog = false) }
+
+    fun logout() {
+        viewModelScope.launch {
+            try { apiService.logout() } catch (_: Exception) {}
+            sessionPreferences.clearSession()
+            organizerSession.logout()
+            notificationRepository.clear()
+        }
+    }
 }
 
 private fun String.trimOrNull(): String? = trim().ifBlank { null }

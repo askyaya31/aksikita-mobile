@@ -64,7 +64,6 @@ fun LikedActivitiesScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Header
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -106,8 +105,6 @@ fun LikedActivitiesScreen(
                     modifier   = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
                 )
             }
-
-            // Content
             when {
                 uiState.isLoading -> {
                     Box(
@@ -237,7 +234,6 @@ private fun LikedBigCard(
         modifier  = Modifier.fillMaxWidth().clickable { onClick() }
     ) {
         Column {
-            // Foto
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -264,8 +260,6 @@ private fun LikedBigCard(
                             )
                         )
                 )
-
-                // Heart button
                 Box(
                     modifier = Modifier
                         .padding(10.dp)
@@ -282,8 +276,6 @@ private fun LikedBigCard(
                         modifier = Modifier.size(20.dp)
                     )
                 }
-
-                // Category badge
                 val categoryName = event.categories?.firstOrNull()?.name
                 if (!categoryName.isNullOrBlank()) {
                     Surface(
@@ -304,7 +296,6 @@ private fun LikedBigCard(
                 }
             }
 
-            // Info
             Column(
                 modifier            = Modifier.padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -325,7 +316,6 @@ private fun LikedBigCard(
                         lineHeight = 19.sp
                     )
                     Spacer(Modifier.width(8.dp))
-                    // Bookmark
                     Box(
                         modifier = Modifier
                             .size(34.dp)
@@ -346,15 +336,12 @@ private fun LikedBigCard(
                         )
                     }
                 }
-
-                // Organisasi
                 val orgName = event.organization?.organization_name
                 if (!orgName.isNullOrBlank()) {
                     Text(orgName, fontSize = 12.sp,
                         color = PrimaryBlue, fontWeight = FontWeight.Medium)
                 }
 
-                // Lokasi
                 val location = buildString {
                     if (!event.location_name.isNullOrBlank()) append(event.location_name)
                     if (!event.city.isNullOrBlank()) {
@@ -374,8 +361,6 @@ private fun LikedBigCard(
                             maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
-
-                // Tanggal
                 if (event.start_date != null) {
                     Row(
                         verticalAlignment     = Alignment.CenterVertically,
@@ -391,8 +376,6 @@ private fun LikedBigCard(
                         )
                     }
                 }
-
-                // Spots left, View Detail
                 if (event.remaining_quota != null) {
                     Row(
                         modifier              = Modifier.fillMaxWidth(),

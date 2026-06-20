@@ -53,9 +53,9 @@ class CandidateListViewModel @Inject constructor(
                 val events = resp.body()?.data ?: emptyList()
 
                 val startEvent = when (initialEventId) {
-                    -1   -> null                              // Sinyal "Semua Kegiatan" dari Dashboard
-                    null -> events.firstOrNull()              // Buka manual via tab Candidate
-                    else -> events.find { it.id == initialEventId } // Buka kegiatan spesifik
+                    -1   -> null
+                    null -> events.firstOrNull()
+                    else -> events.find { it.id == initialEventId }
                 }
 
                 _uiState.value = _uiState.value.copy(events = events, isLoading = false)
@@ -75,29 +75,22 @@ class CandidateListViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, selectedEvent = event)
             try {
-                // KEY FIX: Setiap registrasi di-inject dengan event-nya sendiri.
-                // Ini memastikan user yang daftar banyak event tidak akan nabrak —
-                // masing-masing reg.id unik dan reg.event sudah pasti benar.
                 val combinedRegistrations = mutableListOf<RegistrationDto>()
 
                 if (event != null) {
-                    // Mode: satu kegiatan spesifik
                     val resp = apiService.getEventRegistrations(eventId = event.id)
                     if (resp.isSuccessful) {
                         val regs = (resp.body()?.data ?: emptyList()).map { reg ->
-                            // Inject event object jika API tidak mengembalikannya
                             if (reg.event == null) reg.copy(event = event) else reg
                         }
                         combinedRegistrations.addAll(regs)
                     }
                 } else {
-                    // Mode: semua kegiatan — loop per event agar mapping pasti benar
                     val allEvents = _uiState.value.events
                     allEvents.forEach { e ->
                         val resp = apiService.getEventRegistrations(eventId = e.id)
                         if (resp.isSuccessful) {
                             val regs = (resp.body()?.data ?: emptyList()).map { reg ->
-                                // Inject event object — krusial untuk user yang ikut banyak event
                                 if (reg.event == null) reg.copy(event = e) else reg
                             }
                             combinedRegistrations.addAll(regs)
@@ -125,7 +118,7 @@ class CandidateListViewModel @Inject constructor(
 
     fun onEventSelected(event: EventDto?) {
         _uiState.value = _uiState.value.copy(showEventSheet = false)
-        loadRegistrations(event, "Semua") // Reset filter saat ganti kegiatan manual
+        loadRegistrations(event, "Semua")
     }
 
     fun onFilterSelected(filter: String) {
@@ -141,7 +134,7 @@ class CandidateListViewModel @Inject constructor(
             "Diterima" -> list.filter { it.status == "confirmed" }
             "Ditolak"  -> list.filter { it.status == "cancelled" }
             "Hadir"    -> list.filter { it.status == "attended" }
-            else       -> list  // "Semua"
+            else       -> list
         }
     }
 

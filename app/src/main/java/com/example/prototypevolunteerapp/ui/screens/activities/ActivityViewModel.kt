@@ -179,7 +179,6 @@ class ActivitiesViewModel @Inject constructor(
     fun toggleLike(eventId: Int) {
         val current = _uiState.value.likedIds
         val isLiked = current.contains(eventId)
-        // Optimistic update
         _uiState.value = _uiState.value.copy(
             likedIds = if (isLiked) current - eventId else current + eventId
         )
@@ -187,13 +186,11 @@ class ActivitiesViewModel @Inject constructor(
             try {
                 val resp = apiService.toggleLikeEvent(eventId)
                 if (!resp.isSuccessful) {
-                    // Revert kalau gagal
                     _uiState.value = _uiState.value.copy(
                         likedIds = if (isLiked) current + eventId else current - eventId
                     )
                 }
             } catch (e: Exception) {
-                // Revert kalau gagal
                 _uiState.value = _uiState.value.copy(
                     likedIds = if (isLiked) current + eventId else current - eventId
                 )
@@ -204,7 +201,6 @@ class ActivitiesViewModel @Inject constructor(
     fun toggleSave(eventId: Int) {
         val current = _uiState.value.savedIds
         val isSaved = current.contains(eventId)
-        // Optimistic update
         _uiState.value = _uiState.value.copy(
             savedIds = if (isSaved) current - eventId else current + eventId
         )
@@ -212,13 +208,11 @@ class ActivitiesViewModel @Inject constructor(
             try {
                 val resp = apiService.toggleSaveEvent(eventId)
                 if (!resp.isSuccessful) {
-                    // Revert kalau gagal
                     _uiState.value = _uiState.value.copy(
                         savedIds = if (isSaved) current + eventId else current - eventId
                     )
                 }
             } catch (e: Exception) {
-                // Revert kalau gagal
                 _uiState.value = _uiState.value.copy(
                     savedIds = if (isSaved) current + eventId else current - eventId
                 )

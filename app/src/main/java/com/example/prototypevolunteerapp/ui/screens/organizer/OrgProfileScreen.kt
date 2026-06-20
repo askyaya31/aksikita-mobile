@@ -16,6 +16,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import com.example.prototypevolunteerapp.data.preferences.SessionPreferences
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.shape.CircleShape
+import com.example.prototypevolunteerapp.core.Routes
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -24,12 +34,11 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.prototypevolunteerapp.core.LocalBackStack
-import com.example.prototypevolunteerapp.core.Routes
 
-private val BlueGradientStart = Color(0xFFBBE0FF) // Latar belakang atas
-private val BlueGradientEnd   = Color(0xFFFFFFFF) // Latar belakang bawah
-private val PrimaryBlue       = Color(0xFF2865FF) // Kartu header
-private val FieldBgBlue       = Color(0xFFCBE2FF) // Background text field
+private val BlueGradientStart = Color(0xFFBBE0FF)
+private val BlueGradientEnd   = Color(0xFFFFFFFF)
+private val PrimaryBlue       = Color(0xFF2865FF)
+private val FieldBgBlue       = Color(0xFFCBE2FF)
 private val TextDark          = Color(0xFF1E1E1E)
 private val TextLabel         = Color(0xFF333333)
 
@@ -39,9 +48,56 @@ fun OrgProfileScreen(
     viewModel: OrgProfileViewModel = hiltViewModel()
 ) {
     val backStack = LocalBackStack.current
-    val profile by viewModel.profileState.collectAsState()
+    val profile   by viewModel.profileState.collectAsState()
+    val scope     = rememberCoroutineScope()
+    val context   = LocalContext.current
 
     LaunchedEffect(Unit) { viewModel.loadProfile() }
+    if (profile.showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.onLogoutDialogDismiss() },
+            shape            = RoundedCornerShape(20.dp),
+            containerColor   = Color.White,
+            icon = {
+                Box(
+                    modifier         = Modifier.size(48.dp).background(Color(0xFFFFEBEB), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Logout, null, tint = Color(0xFFD32F2F), modifier = Modifier.size(24.dp))
+                }
+            },
+            title = {
+                Text("Keluar dari Akun?", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TextDark)
+            },
+            text = {
+                Text("Yakin ingin keluar dari akun organisasi ini?", fontSize = 13.sp, color = TextLabel)
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            SessionPreferences(context).clearSession()
+                            viewModel.logout()
+                            viewModel.onLogoutDialogDismiss()
+                            while (backStack.isNotEmpty()) backStack.removeLastOrNull()
+                            backStack.add(Routes.WelcomeRoute)
+                        }
+                    },
+                    shape  = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Ya, Keluar", fontSize = 13.sp) }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick  = { viewModel.onLogoutDialogDismiss() },
+                    shape    = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Batal", fontSize = 13.sp) }
+            }
+        )
+    }
+
 
     Box(
         modifier = Modifier
@@ -63,6 +119,11 @@ fun OrgProfileScreen(
                     navigationIcon = {
                         IconButton(onClick = { backStack.removeLastOrNull() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = TextDark)
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { viewModel.onLogoutDialogShow() }) {
+                            Icon(Icons.Default.Logout, "Logout", tint = Color(0xFFD32F2F))
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -104,7 +165,7 @@ fun OrgProfileScreen(
 
                 item(key = "contact") {
                     SectionCard(title = "Kontak", icon = Icons.Default.ContactPhone) {
-                        DataFieldBoxWithIcon("Instagram(@username)", Icons.Default.Tag, "Aksisolosatu") // Asumsi belum ada di model, gunakan placeholder
+                        DataFieldBoxWithIcon("Instagram(@username)", Icons.Default.Tag, "Aksisolosatu")
                         Spacer(modifier = Modifier.height(12.dp))
                         DataFieldBoxWithIcon("Website / Link", Icons.Default.Language, profile.website.ifBlank { "Aksisolosatu.com" })
                         Spacer(modifier = Modifier.height(12.dp))
@@ -139,7 +200,6 @@ private fun ProfileHeaderCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Logo
             Box(
                 modifier = Modifier
                     .size(72.dp)
@@ -221,7 +281,7 @@ private fun ProfileHeaderCard(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Edit Profile",
+                                text = "Edit",
                                 color = Color.White,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium

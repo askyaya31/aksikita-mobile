@@ -1,9 +1,17 @@
 package com.example.prototypevolunteerapp.ui.screens.organizer
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -11,26 +19,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import coil.compose.AsyncImage
 import com.example.prototypevolunteerapp.core.LocalBackStack
 import com.example.prototypevolunteerapp.ui.components.FormField
 
 private val BgColor      = Color(0xFFF0F4FF)
 private val CardWhite    = Color(0xFFFFFFFF)
-private val AccentBlue   = Color(0xFF1D4ED8)
+private val AccentBlue   = Color(0xFF4568E1)
 private val AccentBlueLt = Color(0xFF3B82F6)
 private val NavyTop      = Color(0xFF1E3A8A)
 private val BorderBlue   = Color(0xFFBFDBFE)
@@ -254,49 +257,53 @@ fun AddActivityScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text("Tambah Kegiatan",
-                        fontWeight = FontWeight.Bold,
-                        fontSize   = 18.sp,
-                        color      = Color.White)
-                },
-                navigationIcon = {
-                    IconButton(onClick = { backStack.removeLastOrNull() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint               = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = NavyTop)
-            )
-        },
         containerColor = BgColor
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
-                    .padding(top = innerPadding.calculateTopPadding())
                     .fillMaxWidth()
-                    .background(AccentBlue)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .background(Brush.linearGradient(listOf(NavyTop, AccentBlue)))
+                    .padding(horizontal = 16.dp)
+                    .padding(
+                        top    = WindowInsets.statusBars.asPaddingValues()
+                            .calculateTopPadding() + 8.dp,
+                        bottom = 20.dp
+                    )
             ) {
-                Row(
-                    verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.15f))
+                        .clickable { backStack.removeLastOrNull() }
+                        .align(Alignment.CenterStart),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Business, null,
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Kembali",
                         tint     = Color.White,
-                        modifier = Modifier.size(16.dp))
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Column(
+                    modifier            = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
-                        "Mengajukan sebagai: ${org?.name ?: "Organisasi"}",
-                        fontSize = 12.sp,
-                        color    = Color.White
+                        "Tambah Kegiatan",
+                        color      = Color.White,
+                        fontSize   = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        "Isi form lengkap untuk membuat event",
+                        color    = Color.White.copy(alpha = 0.75f),
+                        fontSize = 12.sp
                     )
                 }
             }
-
             LazyColumn(
                 modifier            = Modifier
                     .fillMaxSize()
@@ -312,7 +319,7 @@ fun AddActivityScreen(
 
                     Card(
                         modifier  = Modifier.fillMaxWidth(),
-                        shape     = RoundedCornerShape(16.dp),
+                        shape     = RoundedCornerShape(0.dp),
                         colors    = CardDefaults.cardColors(containerColor = CardWhite),
                         elevation = CardDefaults.cardElevation(0.dp)
                     ) {
@@ -633,30 +640,96 @@ fun AddActivityScreen(
                 }
                 item(key = "info_card") {
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape    = RoundedCornerShape(12.dp),
-                        colors   = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF))
+                        modifier  = Modifier.fillMaxWidth(),
+                        shape     = RoundedCornerShape(16.dp),
+                        colors    = CardDefaults.cardColors(containerColor = CardWhite),
+                        elevation = CardDefaults.cardElevation(0.dp)
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
+                        Column(modifier = Modifier.padding(14.dp)) {
                             Row(
                                 verticalAlignment     = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier              = Modifier.padding(bottom = 12.dp)
+                            ) {
+                                Icon(Icons.Default.Route, null,
+                                    tint     = AccentBlueLt,
+                                    modifier = Modifier.size(16.dp))
+                                Text("Alur publikasi event",
+                                    fontSize   = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color      = Color(0xFF1E293B))
+                            }
+                            val steps = listOf(
+                                Icons.Default.Edit          to "Isi form",
+                                Icons.Default.Preview       to "Preview",
+                                Icons.Default.Article       to "Draft",
+                                Icons.Default.Send          to "Submit",
+                                Icons.Default.AdminPanelSettings to "Review",
+                                Icons.Default.Public        to "Publik"
+                            )
+                            Row(
+                                modifier              = Modifier.fillMaxWidth(),
+                                verticalAlignment     = Alignment.Top,
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                steps.forEachIndexed { index, (icon, label) ->
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier            = Modifier.weight(1f)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(28.dp)
+                                                .background(
+                                                    color = Color(0xFFDBEAFE),
+                                                    shape = CircleShape
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(icon, null,
+                                                tint     = AccentBlue,
+                                                modifier = Modifier.size(14.dp))
+                                        }
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(label,
+                                            fontSize  = 9.sp,
+                                            color     = Color(0xFF475569),
+                                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                            maxLines  = 2,
+                                            lineHeight = 12.sp)
+                                    }
+                                    if (index < steps.lastIndex) {
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(0.3f)
+                                                .height(1.dp)
+                                                .background(Color(0xFFBFDBFE))
+                                                .align(Alignment.Top)
+                                                .padding(top = 14.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFFEFF6FF), RoundedCornerShape(8.dp))
+                                    .border(0.5.dp, BorderBlue, RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment     = Alignment.Top
                             ) {
                                 Icon(Icons.Default.Info, null,
                                     tint     = AccentBlueLt,
-                                    modifier = Modifier.size(14.dp))
-                                Text("Alur Publikasi Event",
-                                    fontSize   = 13.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color      = Color(0xFF1E40AF))
+                                    modifier = Modifier.size(14.dp).padding(top = 1.dp))
+                                Text(
+                                    "Setelah disimpan sebagai draft, kamu bisa submit ke admin kapan saja dari halaman kelola kegiatan.",
+                                    fontSize   = 11.sp,
+                                    color      = Color(0xFF1E40AF),
+                                    lineHeight = 16.sp
+                                )
                             }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                "1. Isi form → 2. Preview → 3. Simpan sebagai draft\n" +
-                                        "4. Submit ke review admin → 5. Admin setujui → 6. Tampil ke publik",
-                                fontSize = 12.sp,
-                                color    = Color(0xFF1E40AF)
-                            )
                         }
                     }
                 }
@@ -669,7 +742,6 @@ fun AddActivityScreen(
                         colors   = ButtonDefaults.buttonColors(containerColor = AccentBlue),
                         enabled  = !form.isSubmitting
                     ) {
-                        Icon(Icons.Default.Preview, null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Preview & Submit",
                             fontSize   = 15.sp,

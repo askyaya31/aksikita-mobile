@@ -5,18 +5,15 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -33,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.example.prototypevolunteerapp.R
 import com.example.prototypevolunteerapp.core.LocalBackStack
 import com.example.prototypevolunteerapp.core.Routes
+import com.example.prototypevolunteerapp.ui.components.AppFooter
 
 @Composable
 fun WelcomeScreen() {
@@ -45,170 +43,134 @@ fun WelcomeScreen() {
         slideAnim.animateTo(0f, tween(700, easing = FastOutSlowInEasing))
     }
 
-    // Background gradient lembut sesuai gambar
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFFFFFFFF),
-                        Color(0xFFE6F0FF),
-                        Color(0xFFCCE0FF)
-                    )
-                )
-            )
+            .navigationBarsPadding()
+            .alpha(fadeAnim.value),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Image(
+            painter            = painterResource(id = R.drawable.bgwelcome),
+            contentDescription = null,
+            contentScale       = ContentScale.Crop,
+            modifier           = Modifier
+                .fillMaxWidth()
+                .weight(0.42f)
+        )
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .alpha(fadeAnim.value),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-
-            // ── Gambar atas dengan bentuk melengkung (convex) ─────────────────
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(400.dp)
-            ) {
-                Image(
-                    painter            = painterResource(id = R.drawable.bg_welcome),
-                    contentDescription = null,
-                    contentScale       = ContentScale.Crop,
-                    modifier           = Modifier
-                        .fillMaxSize()
-                        .clip(
-                            RoundedCornerShape(
-                                bottomStartPercent = 100,
-                                bottomEndPercent = 100
-                            )
+                .fillMaxWidth()
+                .weight(0.58f)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFFFFFFFF),
+                            Color(0xFFFFFFFF),
+                            Color(0xFFDEEEFF),
+                            Color(0xFFCCE0FF)
                         )
+                    )
                 )
+                .graphicsLayer { translationY = slideAnim.value }
+                .padding(horizontal = 32.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Spacer(modifier = Modifier.height(24.dp))
 
-                // Logo di pojok kiri atas gambar - ukuran diperbesar
-                Image(
-                    painter = painterResource(id = R.drawable.logo),
-                    contentDescription = "Logo",
-                    modifier = Modifier
-                        .statusBarsPadding()
-                        .padding(start = 24.dp, top = 16.dp)
-                        .height(60.dp)
-                        .align(Alignment.TopStart),
-                    contentScale = ContentScale.Fit
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = Color(0xFF253F99) )) {
+                        append("Aksi")
+                    }
+                    withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold,  color = Color(0xFF4E6AC9))) {
+                        append(" Nyata\nDimulai dari ")
+                    }
+                    withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = Color(0xFF253F99) )) {
+                        append("Kita!")
+                    }
+                },
+                style = TextStyle(
+                    fontSize   = 30.sp,
+                    textAlign  = TextAlign.Center,
+                    lineHeight = 40.sp
                 )
-            }
+            )
 
-            // ── Konten bawah ─────────────────────────────────────────────────
-            Column(
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text  = "Terhubung dengan organisasi dan relawan\nuntuk menciptakan dampak nyata!",
+                style = TextStyle(
+                    fontSize   = 15.sp,
+                    color = Color(0xFF1E3B8B).copy(alpha = 0.8f),
+                    textAlign  = TextAlign.Center,
+                    lineHeight = 22.sp
+                )
+            )
+
+            Spacer(modifier = Modifier.height(34.dp))
+
+            Button(
+                onClick  = { backStack.add(Routes.LoginRoute) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .graphicsLayer { translationY = slideAnim.value }
-                    .padding(horizontal = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Judul: "Aksi" biru bold, "Nyata" hitam, "Kita" biru bold
-                Text(
-                    text = buildAnnotatedString {
-                        withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = Color(0xFF031E66))) {
-                            append("Aksi")
-                        }
-                        withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E3B8B))) {
-                            append(" Nyata\nDimulai dari ")
-                        }
-                        withStyle(SpanStyle(fontWeight = FontWeight.ExtraBold, color = Color(0xFF1E3B8B))) {
-                            append("Kita!")
-                        }
-                    },
-                    style = TextStyle(
-                        fontSize   = 28.sp,
-                        textAlign  = TextAlign.Center,
-                        lineHeight = 40.sp
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Subtitle — warna gelap, bukan putih
-                Text(
-                    text  = "Terhubung dengan organisasi dan relawan\nuntuk menciptakan dampak nyata!",
-                    style = TextStyle(
-                        fontSize   = 13.sp,
-                        color      = Color(0xFF2A5EEA),
-                        textAlign  = TextAlign.Center,
-                        lineHeight = 22.sp
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(36.dp))
-
-                // Tombol Login — Gradient blue pill shape
-                Button(
-                    onClick  = { backStack.add(Routes.LoginRoute) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp)
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(Color(0xFF61A5FA), Color(0xFF1E3B8B))
-                            ),
-                            shape = RoundedCornerShape(50.dp)
+                    .height(50.dp)
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(Color(0xFF4A90D9), Color(0xFF7BB8F0))
                         ),
-                    shape  = RoundedCornerShape(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    contentPadding = PaddingValues()
-                ) {
-                    Text(
-                        text       = "Login",
-                        fontSize   = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color      = Color.White
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Tombol Jelajahi Aksi — Outline biru brand
-                OutlinedButton(
-                    onClick  = { backStack.add(Routes.ActivitiesRoute) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp),
-                    shape  = RoundedCornerShape(50.dp),
-                    border = BorderStroke(1.5.dp, Color(0xFF1E3B8B)),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFF1E3B8B)
-                    )
-                ) {
-                    Text(
-                        text = "Jelajahi Aksi",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF1E3B8B)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Daftar — tetap ada sebagai TextButton kecil
-                TextButton(
-                    onClick  = { backStack.add(Routes.RegisterRoute) },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text       = "Belum punya akun? Daftar sekarang",
-                        fontSize   = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color      = Color(0xFF4A7FE5)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
+                        shape = RoundedCornerShape(50.dp)
+                    ),
+                shape          = RoundedCornerShape(50.dp),
+                colors         = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                contentPadding = PaddingValues()
+            ) {
+                Text(
+                    text       = "Login",
+                    fontSize   = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color      = Color.White
+                )
             }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            OutlinedButton(
+                onClick  = { backStack.add(Routes.ActivitiesRoute) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape  = RoundedCornerShape(40.dp),
+                border = BorderStroke(1.5.dp, Color(0xFF1E3B8B)),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFF1E3B8B)
+                )
+            ) {
+                Text(
+                    text       = "Temukan Kegiatan",
+                    fontSize   = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color      = Color(0xFF1E3B8B)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(30.dp))
+
+            TextButton(
+                onClick  = { backStack.add(Routes.RegisterRoute) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text       = "Belum punya akun? Daftar sekarang",
+                    fontSize   = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF1E3B8B).copy(alpha = 0.8f)
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

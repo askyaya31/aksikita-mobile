@@ -49,7 +49,6 @@ object NetworkModule {
                 .build()
         }
 
-        // Cukup deklarasikan ngrokInterceptor satu kali saja
         val ngrokInterceptor = Interceptor { chain ->
             val request = chain.request().newBuilder()
                 .addHeader("ngrok-skip-browser-warning", "true")

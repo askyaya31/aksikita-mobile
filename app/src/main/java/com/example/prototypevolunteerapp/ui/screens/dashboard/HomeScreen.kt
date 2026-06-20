@@ -33,14 +33,18 @@ import androidx.navigation3.runtime.NavKey
 import coil.compose.AsyncImage
 import com.example.prototypevolunteerapp.core.LocalBackStack
 import com.example.prototypevolunteerapp.core.Routes
+import com.example.prototypevolunteerapp.core.UserSession
+import com.example.prototypevolunteerapp.ui.components.ActivityCard
+import com.example.prototypevolunteerapp.ui.components.UpcomingScheduleMiniCard
 import com.example.prototypevolunteerapp.data.model.ActivityData
 import com.example.prototypevolunteerapp.data.remote.dto.RegistrationDto
+import com.example.prototypevolunteerapp.ui.components.ProfileMenuItem
+import com.example.prototypevolunteerapp.ui.components.RecommendationCard
 
 private val NavyDark     = Color(0xFF1E3A8A)
 private val PrimaryBlue  = Color(0xFF3B82F6)
 private val BlueMid      = Color(0xFF60A5FA)
 private val BluePale     = Color(0xFFBFDBFE)
-private val BlueGhost    = Color(0xFFEFF6FF)
 private val AccentOrange = Color(0xFFE8501A)
 private val BgScreen     = Color(0xFFF8FAFF)
 private val TextDark     = Color(0xFF0F172A)
@@ -54,6 +58,15 @@ private data class BottomNavItem(
     val route:          NavKey
 )
 
+private data class RecommendationItem(
+    val title: String,
+    val category: String,
+    val date: String,
+    val time: String,
+    val location: String,
+    val slotsLeft: Int,
+    val bgColor: Color
+)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
@@ -70,7 +83,8 @@ fun HomeScreen(
         BottomNavItem("Beranda",  Icons.Filled.Home,              Icons.Outlined.Home,              Routes.HomeRoute),
         BottomNavItem("Kegiatan", Icons.Filled.VolunteerActivism, Icons.Outlined.VolunteerActivism, Routes.ActivitiesRoute),
         BottomNavItem("Riwayat",  Icons.Filled.History,           Icons.Outlined.History,           Routes.ActivityHistoryRoute),
-        BottomNavItem("Saved",    Icons.Filled.Bookmark,          Icons.Outlined.BookmarkBorder,    Routes.SavedActivitiesRoute),
+        BottomNavItem("Pesan",  Icons.Filled.Chat,           Icons.Outlined.Chat,           Routes.ChatListRoute()),
+        //BottomNavItem("Saved",    Icons.Filled.Bookmark,          Icons.Outlined.BookmarkBorder,    Routes.SavedActivitiesRoute),
         BottomNavItem("Profil",   Icons.Filled.Person,            Icons.Outlined.Person,            Routes.ProfileRoute)
     )
 
@@ -111,62 +125,64 @@ fun HomeScreen(
                     onNotifClick   = { backStack.add(Routes.NotificationsRoute) }
                 )
             }
-
             item(key = "nearby_section") {
                 HomeSectionHeader(
                     title    = "Kegiatan di ${uiState.userCity ?: "Sekitarmu"}",
-                    subtitle = null,
+                    subtitle = "Jangan lewatkan kegiatan di sekitarmu",
                     onSeeAll = { backStack.add(Routes.ActivitiesRoute) }
                 )
-                if (uiState.nearbyEvents.isNotEmpty()) {
-                    NearbyEventsPager(
-                        events      = uiState.nearbyEvents,
-                        onItemClick = { event ->
-                            backStack.add(
-                                Routes.ActivityDetailRoute(
-                                    id       = event.id,
-                                    slug     = event.slug,
-                                    title    = event.title,
-                                    location = event.location,
-                                    desc     = event.description,
-                                    imageRes = event.imageRes
-                                )
-                            )
+                when {
+                    uiState.isLoadingNearby -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(120.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = PrimaryBlue, modifier = Modifier.size(32.dp))
                         }
-                    )
-                } else {
-                    NearbyEventsPlaceholder()
+                    }
+                    uiState.nearbyEvents.isNotEmpty() -> {
+                        NearbyEventsPager(
+                            events      = uiState.nearbyEvents,
+                            onItemClick = { event ->
+                                backStack.add(
+                                    Routes.ActivityDetailRoute(
+                                        id       = event.id,
+                                        slug     = event.slug,
+                                        title    = event.title,
+                                        location = event.location,
+                                        desc     = event.description,
+                                        imageRes = event.imageRes
+                                    )
+                                )
+                            }
+                        )
+                    }
+                    else -> NearbyEventsPlaceholder()
                 }
             }
 
-            if (uiState.activeRegistrations.isNotEmpty()) {
-                item(key = "active_header") {
+            if (uiState.upcomingSchedule.isNotEmpty()) {
+                item(key = "schedule_header") {
                     HomeSectionHeader(
-                        title    = "Pendaftaranku",
-                        subtitle = "Kegiatan yang sedang kamu ikuti",
-                        onSeeAll = { backStack.add(Routes.ActivityHistoryRoute) }
+                        title    = "Jadwal Mendatang",
+                        subtitle = "Kegiatan yang akan kamu ikuti",
+                        onSeeAll = { backStack.add(Routes.ScheduleRoute) }
                     )
                 }
-                item(key = "active_list") {
-                    ActiveRegistrationList(
-                        registrations = uiState.activeRegistrations,
-                        onItemClick   = { reg ->
-                            val event = reg.event ?: return@ActiveRegistrationList
-                            backStack.add(
-                                Routes.ActivityDetailRoute(
-                                    id       = event.id.toString(),
-                                    slug     = event.slug ?: "",
-                                    title    = event.title,
-                                    location = "${event.city ?: ""}, ${event.province ?: ""}".trim(',', ' '),
-                                    desc     = event.description ?: "",
-                                    imageRes = event.poster ?: ""
-                                )
-                            )
-                        }
+                item(key = "schedule_list") {
+                    UpcomingScheduleList(
+                        schedules = uiState.upcomingSchedule.take(3)
                     )
                 }
             }
 
+            item(key = "events_header") {
+                HomeSectionHeader(
+                    title    = "Kegiatan Tersedia",
+                    subtitle = "Mari mulai berkontribusi!",
+                    onSeeAll = { backStack.add(Routes.ActivitiesRoute) }
+                )
+            }
             item(key = "category_chips") {
                 CategoryChipRow(
                     categories     = uiState.categoryChips,
@@ -174,15 +190,6 @@ fun HomeScreen(
                     onChipSelected = { viewModel.onCategoryChipSelected(it) }
                 )
             }
-
-            item(key = "events_header") {
-                HomeSectionHeader(
-                    title    = "Available Opportunities",
-                    subtitle = null,
-                    onSeeAll = { backStack.add(Routes.ActivitiesRoute) }
-                )
-            }
-
             item(key = "events") {
                 when {
                     uiState.isLoadingApi -> {
@@ -218,7 +225,30 @@ fun HomeScreen(
                     }
                 }
             }
-
+            if (uiState.recommendations.isNotEmpty()) {
+                item(key = "recommendations_section") {
+                    HomeSectionHeader(
+                        title    = "Rekomendasi untukmu",
+                        subtitle = "Berdasarkan minat & riwayatmu",
+                        onSeeAll = { backStack.add(Routes.RecommendationsRoute) }
+                    )
+                    RecommendationCardRow(
+                        items       = uiState.recommendations,
+                        onItemClick = { event ->
+                            backStack.add(
+                                Routes.ActivityDetailRoute(
+                                    id       = event.id,
+                                    slug     = event.slug,
+                                    title    = event.title,
+                                    location = event.location,
+                                    desc     = event.description,
+                                    imageRes = event.imageRes
+                                )
+                            )
+                        }
+                    )
+                }
+            }
             item(key = "footer") {
                 Text(
                     text      = "AksiKita © 2026",
@@ -231,8 +261,6 @@ fun HomeScreen(
         }
     }
 }
-
-// Header
 @Composable
 private fun HomeHeader(
     userName:       String,
@@ -267,7 +295,7 @@ private fun HomeHeader(
                 .align(Alignment.Center)
                 .padding(horizontal = 20.dp)
                 .padding(top = 12.dp, bottom = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment     = Alignment.CenterVertically
         ) {
             Row(
@@ -299,7 +327,6 @@ private fun HomeHeader(
                             )
                         }
                     }
-                    // Green online dot
                     Box(
                         modifier = Modifier
                             .size(12.dp)
@@ -396,7 +423,6 @@ private fun NearbyEventsPlaceholder() {
     }
 }
 
-// Section Header
 @Composable
 private fun HomeSectionHeader(title: String, subtitle: String?, onSeeAll: () -> Unit) {
     Row(
@@ -417,8 +443,99 @@ private fun HomeSectionHeader(title: String, subtitle: String?, onSeeAll: () -> 
         }
     }
 }
+@Composable
+private fun UpcomingScheduleList(
+    schedules: List<com.example.prototypevolunteerapp.data.remote.dto.ScheduleEventDto>
+) {
+    Column(
+        modifier            = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        schedules.forEach { event ->
+            Card(
+                modifier  = Modifier.fillMaxWidth(),
+                shape     = RoundedCornerShape(14.dp),
+                elevation = CardDefaults.cardElevation(1.dp),
+                colors    = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Row(
+                    modifier              = Modifier.padding(14.dp),
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier         = Modifier
+                            .size(42.dp)
+                            .background(PrimaryBlue.copy(alpha = 0.1f), RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.CalendarToday,
+                            contentDescription = null,
+                            tint     = PrimaryBlue,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
 
-// Active Registrations
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text       = event.eventTitle,
+                            fontSize   = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color      = TextDark,
+                            maxLines   = 1,
+                            overflow   = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text       = event.organizerName,
+                            fontSize   = 11.sp,
+                            color      = PrimaryBlue,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Row(
+                            verticalAlignment     = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Row(
+                                verticalAlignment     = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(3.dp)
+                            ) {
+                                Icon(Icons.Default.CalendarToday, null, tint = TextMuted, modifier = Modifier.size(10.dp))
+                                Text(event.startDate, fontSize = 10.sp, color = TextMuted)
+                            }
+                            if (event.startTime != null) {
+                                Row(
+                                    verticalAlignment     = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    Icon(Icons.Default.Schedule, null, tint = TextMuted, modifier = Modifier.size(10.dp))
+                                    val timeLabel = if (event.endTime != null)
+                                        "${event.startTime} – ${event.endTime}"
+                                    else event.startTime
+                                    Text(timeLabel, fontSize = 10.sp, color = TextMuted)
+                                }
+                            }
+                        }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(99.dp),
+                        color = PrimaryBlue.copy(alpha = 0.1f)
+                    ) {
+                        Text(
+                            "Upcoming",
+                            modifier   = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            fontSize   = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color      = PrimaryBlue
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun ActiveRegistrationList(
@@ -573,7 +690,6 @@ private fun NearbyEventCard(event: ActivityData, onClick: () -> Unit) {
                     )
             )
 
-            // Nearby chip
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -637,8 +753,6 @@ private fun NearbyEventCard(event: ActivityData, onClick: () -> Unit) {
     }
 }
 
-// Category Chips
-
 @Composable
 private fun CategoryChipRow(
     categories:    List<String>,
@@ -648,7 +762,8 @@ private fun CategoryChipRow(
     Row(
         modifier = Modifier
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         FilterChip(
@@ -677,8 +792,6 @@ private fun CategoryChipRow(
     }
 }
 
-// Events List
-
 @Composable
 private fun EventVerticalList(
     events:      List<ActivityData>,
@@ -688,7 +801,7 @@ private fun EventVerticalList(
         modifier            = Modifier.padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        events.take(8).forEach { event ->
+        events.take(5).forEach { event ->
             EventListCard(activity = event, onClick = { onItemClick(event) })
         }
     }
@@ -725,12 +838,10 @@ private fun EventListCard(activity: ActivityData, onClick: () -> Unit) {
                 )
             }
 
-            // Info
             Column(
                 modifier            = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // Title + category badge
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -763,7 +874,6 @@ private fun EventListCard(activity: ActivityData, onClick: () -> Unit) {
                     }
                 }
 
-                // Organization
                 if (!activity.organizationName.isNullOrBlank()) {
                     Text(
                         activity.organizationName,
@@ -772,8 +882,6 @@ private fun EventListCard(activity: ActivityData, onClick: () -> Unit) {
                         fontWeight = FontWeight.Medium
                     )
                 }
-
-                // Location
                 Row(
                     verticalAlignment     = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
@@ -782,7 +890,6 @@ private fun EventListCard(activity: ActivityData, onClick: () -> Unit) {
                     Text(activity.location, fontSize = 10.sp, color = TextMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
 
-                // Duration
                 if (!activity.duration.isNullOrBlank()) {
                     Row(
                         verticalAlignment     = Alignment.CenterVertically,
@@ -792,8 +899,6 @@ private fun EventListCard(activity: ActivityData, onClick: () -> Unit) {
                         Text(activity.duration, fontSize = 10.sp, color = TextMuted)
                     }
                 }
-
-                // Spots left
                 if (activity.remainingQuota != null) {
                     Text(
                         "${activity.remainingQuota} spots left",
@@ -807,8 +912,26 @@ private fun EventListCard(activity: ActivityData, onClick: () -> Unit) {
     }
 }
 
-// Bottom Bar
-
+@Composable
+private fun RecommendationCardRow(
+    items:       List<ActivityData>,
+    onItemClick: (ActivityData) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items.forEach { event ->
+            RecommendationCard(
+                event    = event,
+                onClick  = { onItemClick(event) },
+                modifier = Modifier.width(200.dp)
+            )
+        }
+    }
+}
 @Composable
 private fun VolunteerBottomBar(
     navItems:    List<BottomNavItem>,

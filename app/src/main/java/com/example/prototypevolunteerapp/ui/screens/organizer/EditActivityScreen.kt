@@ -12,6 +12,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -28,12 +34,14 @@ import coil.compose.AsyncImage
 import com.example.prototypevolunteerapp.core.LocalBackStack
 import com.example.prototypevolunteerapp.ui.components.FormField
 
-private val BgColor      = Color(0xFFF0F4FF)   // light blue-tinted background
+private val BgColor      = Color(0xFFF0F4FF)
 private val CardWhite    = Color(0xFFFFFFFF)
-private val AccentBlue   = Color(0xFF1D4ED8)   // primary blue (buttons, icons)
-private val AccentBlueLt = Color(0xFF3B82F6)   // lighter blue (icons inside fields)
-private val NavyTop      = Color(0xFF1E3A8A)   // top-bar / org-banner background
-private val BorderBlue   = Color(0xFFBFDBFE)   // subtle blue border / divider
+private val AccentBlue   = Color(0xFF6088FD)
+private val NavyDeep           = Color(0xFF1E3A8A)
+private val PrimaryBlue        = Color(0xFF3D85FC)
+private val AccentBlueLt = Color(0xFF3B82F6)
+private val NavyTop      = Color(0xFF3B67DA)
+private val BorderBlue   = Color(0xFFBFDBFE)
 
 fun activityStatusUi(statusFromApi: String): Triple<String, Color, Color> =
     when (statusFromApi) {
@@ -272,7 +280,6 @@ fun EditActivityScreen(
                 EditPreviewRow(Icons.Default.DateRange,    "Tanggal Selesai", form.tanggalSelesai)
                 EditPreviewRow(Icons.Default.People,       "Kuota",           form.kuota)
 
-                // Status badge
                 Row(
                     verticalAlignment     = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -380,62 +387,82 @@ fun EditActivityScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHost) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text("Edit Kegiatan",
-                        fontWeight = FontWeight.Bold,
-                        fontSize   = 18.sp,
-                        color      = Color.White)
-                },
-                navigationIcon = {
-                    IconButton(onClick = { backStack.removeLastOrNull() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint               = Color.White)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.onDeleteDialogShow() }) {
-                        Icon(Icons.Default.DeleteForever,
-                            contentDescription = "Hapus",
-                            tint               = Color(0xFFFFAAAA))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = NavyTop)
-            )
-        },
-        containerColor = BgColor
+        containerColor  = BgColor
     ) { innerPadding ->
-
         Column(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
-                    .padding(top = innerPadding.calculateTopPadding())
                     .fillMaxWidth()
-                    .background(AccentBlue)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .background(Brush.linearGradient(listOf(NavyDeep, PrimaryBlue)))
+                    .padding(horizontal = 16.dp)
+                    .padding(
+                        top    = WindowInsets.statusBars.asPaddingValues()
+                            .calculateTopPadding() + 8.dp,
+                        bottom = 20.dp
+                    )
             ) {
-                Row(
-                    verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.15f))
+                        .clickable { backStack.removeLastOrNull() }
+                        .align(Alignment.CenterStart),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Business, null,
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Kembali",
                         tint     = Color.White,
-                        modifier = Modifier.size(16.dp))
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Column(
+                    modifier            = Modifier.align(Alignment.Center),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
-                        "Mengajukan sebagai: Organisasi Anda",
+                        "Edit Kegiatan",
+                        color      = Color.White,
+                        fontSize   = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        form.namaKegiatan.ifBlank { "Memuat data..." },
+                        color    = Color.White.copy(alpha = 0.75f),
                         fontSize = 12.sp,
-                        color    = Color.White
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.widthIn(max = 200.dp)
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .clickable { viewModel.onDeleteDialogShow() }
+                        .align(Alignment.CenterEnd),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.DeleteForever,
+                        contentDescription = "Hapus",
+                        tint     = Color(0xFFCC2222),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
-
             LazyColumn(
-                modifier            = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                modifier            = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding      = PaddingValues(bottom = 32.dp, top = 12.dp)
-            ) {
+                contentPadding      = PaddingValues(
+                    top    = 12.dp,
+                    bottom = innerPadding.calculateBottomPadding() + 32.dp
+                )) {
 
                 item(key = "poster_card") {
                     OutlinedCard(
@@ -535,7 +562,6 @@ fun EditActivityScreen(
                     }
                 }
 
-                // ── Status card ───────────────────────────────────────────────
                 item(key = "status_card") {
                     OutlinedCard(
                         modifier  = Modifier.fillMaxWidth(),
@@ -606,7 +632,6 @@ fun EditActivityScreen(
                     }
                 }
 
-                // ── Form detail card ──────────────────────────────────────────
                 item(key = "form_card") {
                     OutlinedCard(
                         modifier  = Modifier.fillMaxWidth(),
@@ -678,8 +703,6 @@ fun EditActivityScreen(
                                 isError       = form.kuotaError,
                                 errorMsg      = "Kuota harus berupa angka"
                             )
-
-                            // Description textarea
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -744,7 +767,6 @@ fun EditActivityScreen(
                     }
                 }
 
-                // ── Danger zone card ──────────────────────────────────────────
                 item(key = "danger_card") {
                     OutlinedCard(
                         modifier = Modifier.fillMaxWidth(),
@@ -788,7 +810,6 @@ fun EditActivityScreen(
                         colors   = ButtonDefaults.buttonColors(containerColor = AccentBlue),
                         enabled  = !form.isReadOnly && !form.isSubmitting
                     ) {
-                        Icon(Icons.Default.Preview, null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Preview & Submit",
                             fontSize   = 15.sp,

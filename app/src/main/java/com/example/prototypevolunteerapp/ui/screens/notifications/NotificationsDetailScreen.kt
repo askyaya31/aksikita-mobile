@@ -123,9 +123,9 @@ private fun NotifDetailContent(
         "registration_confirmed" -> Triple(Icons.Default.CheckCircle,  Color(0xFFE3F5F2), Color(0xFF0E7B6C))
         "registration_rejected"  -> Triple(Icons.Default.Cancel,        Color(0xFFFEE2E2), Color(0xFFEF4444))
         "event_cancelled"        -> Triple(Icons.Default.EventBusy,     Color(0xFFFEF3C7), Color(0xFFD4900A))
-        "event_updated"          -> Triple(Icons.Default.Update,         Color(0xFFEFF6FF), Color(0xFF3B82F6))
+        "event_updated"          -> Triple(Icons.Default.EditCalendar,         Color(0xFFEFF6FF), Color(0xFF3B82F6))
         "new_registration"       -> Triple(Icons.Default.PersonAdd,      Color(0xFFEFF6FF), Color(0xFF3B82F6))
-        "event_reminder"         -> Triple(Icons.Default.Alarm,          Color(0xFFFEF3C7), Color(0xFFD4900A))
+        "event_reminder"         -> Triple(Icons.Default.NotificationsActive,          Color(0xFFFEF3C7), Color(0xFFD4900A))
         "event_reviewed"         -> Triple(Icons.Default.RateReview,     Color(0xFFEFF6FF), Color(0xFF1E3A8A))
         else                     -> Triple(Icons.Default.Notifications,  Color(0xFFEFF6FF), Color(0xFF3B82F6))
     }
@@ -138,7 +138,6 @@ private fun NotifDetailContent(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // Header card
         Card(
             shape     = RoundedCornerShape(18.dp),
             colors    = CardDefaults.cardColors(containerColor = Color.White),
@@ -181,8 +180,6 @@ private fun NotifDetailContent(
                 }
             }
         }
-
-        // Pesan card
         Card(
             shape     = RoundedCornerShape(16.dp),
             colors    = CardDefaults.cardColors(containerColor = Color.White),
@@ -198,8 +195,6 @@ private fun NotifDetailContent(
                     color = Color(0xFF334155), lineHeight = 22.sp)
             }
         }
-
-        // Info, tombol kegiatan
         if (notif.type != null || notif.related_event_id != null) {
             Card(
                 shape     = RoundedCornerShape(16.dp),

@@ -58,6 +58,9 @@ object Routes {
     data class CandidateListRoute(val eventId: Int? = null, val initialFilter: String = "Semua") : NavKey
 
     @Serializable
+    data class EventDetailRoute(val eventId: Int) : NavKey
+
+    @Serializable
     data class CandidateDetailRoute(
         val candidateId: Int
     ) : NavKey
@@ -68,10 +71,28 @@ object Routes {
     data class NotificationDetailRoute(
         val notificationId: Int
     ) : NavKey
+    @Serializable
+    data class ChatListRoute(val isOrganizer: Boolean = false) : NavKey
+    @Serializable
+    data class ChatRoomRoute(
+        val roomId: Int,
+        val eventTitle: String,
+        val organizerName: String,
+        val isOrganizer: Boolean = false,
+        val organizerLogo: String? = null
+    ) : NavKey
 
     @Serializable
-    data object OrgProfileRoute : NavKey
+    data object ScheduleRoute : NavKey
 
+    @Serializable
+    data object RecommendationsRoute : NavKey
+    @Serializable
+    data object OrgProfileRoute : NavKey
+    @Serializable
+    data class OrgActivitiesRoute(
+        val initialStatus: String? = null
+    ) : NavKey
     @Serializable
     data object EditOrgProfileRoute : NavKey
 
@@ -79,7 +100,8 @@ object Routes {
     data object EditProfileRoute : NavKey
     @Serializable
     data object SavedActivitiesRoute : NavKey
-
+    @Serializable
+    data object OrgScheduleRoute : NavKey
     @Serializable
     data object LikedActivitiesRoute : NavKey
     @Serializable

@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -22,44 +23,48 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.layout.ContentScale
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.prototypevolunteerapp.core.LocalBackStack
 import com.example.prototypevolunteerapp.core.Routes
 import com.example.prototypevolunteerapp.ui.components.AppFooter
-import com.example.prototypevolunteerapp.data.preferences.SessionPreferences
+import androidx.compose.material.icons.filled.CalendarMonth
 import kotlinx.coroutines.launch
+import com.example.prototypevolunteerapp.ui.theme.AppColors
 
-private val BgColor        = Color(0xFFF5F7FF)
-private val HeaderBgTop    = Color(0xFF86B8FF)
-private val HeaderBgMiddle = Color(0xFF5B9BD5)
-private val HeaderBgBottom = Color(0xFFCBE2FF)
-private val CardPending    = Color(0xFF4A88FF)
-private val AddButtonColor = Color(0xFF2865FF)
-private val CardWhite      = Color(0xFFFFFFFF)
-private val TextPrimary    = Color(0xFF1A1A2E)
-private val TextSecondary  = Color(0xFF555577)
-private val hoverColor     = Color(0xFF0C3B65)
+private val BgColor             = AppColors.BgColor
+private val PrimaryBlue         = AppColors.PrimaryBlue
+private val NavyDeep            = AppColors.NavyDark
+private val BlueMid             = AppColors.MediumBlue
+private val BlueLight           = AppColors.LightBlue
+private val BluePale            = AppColors.PalestBlue
+private val CardWhite           = AppColors.CardWhite
+private val TextPrimary         = AppColors.TextDark
+private val TextSecondary       = AppColors.TextMuted
 
-private val StatusPendingText  = Color(0xFFB45309)
-private val StatusPendingBg    = Color(0xFFFEF3C7)
-private val StatusAcceptedText = Color(0xFF16A34A)
-private val StatusAcceptedBg   = Color(0xFFDCFCE7)
-private val StatusRejectedText = Color(0xFFDC2626)
-private val StatusRejectedBg    = Color(0xFFFEE2E2)
-private val StatusCompletedText = Color(0xFF059669)
-private val StatusCompletedBg   = Color(0xFFD1FAE5)
+private val StatusPendingText   = AppColors.WarningText
+private val StatusPendingBg     = AppColors.WarningBg
+private val StatusActiveText    = AppColors.SuccessText
+private val StatusActiveBg      = AppColors.SuccessBg
+private val StatusRejectedText  = AppColors.DangerText
+private val StatusRejectedBg    = AppColors.DangerBg
+private val StatusCompletedText = AppColors.CompletedText
+private val StatusCompletedBg   = AppColors.CompletedBg
+private val NotifAccent         = AppColors.NotifAccent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,12 +72,14 @@ fun OrgDashboardScreen(
     viewModel: OrgDashboardViewModel = hiltViewModel()
 ) {
     val backStack = LocalBackStack.current
-    val context   = androidx.compose.ui.platform.LocalContext.current
     val scope     = rememberCoroutineScope()
     val org       = viewModel.currentOrg
 
     val uiState         by viewModel.uiState.collectAsState()
     val events          = uiState.events
+    val selectedTab     = uiState.selectedTab
+    val sectionsVisible = uiState.sectionsVisible
+    val showStatsSheet  = uiState.showStatsSheet
 
     val statsSheetState   = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val snackbarHostState = remember { SnackbarHostState() }
@@ -82,75 +89,21 @@ fun OrgDashboardScreen(
         viewModel.onSectionsVisible()
     }
 
-    val sectionsVisible  = uiState.sectionsVisible
-    val showLogoutDialog = uiState.showLogoutDialog
-    val showStatsSheet   = uiState.showStatsSheet
-    val selectedTab      = uiState.selectedTab
-
-    if (showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.onLogoutDialogDismiss() },
-            shape            = RoundedCornerShape(20.dp),
-            containerColor   = CardWhite,
-            icon = {
-                Box(
-                    modifier         = Modifier.size(48.dp).background(Color(0xFFFFEBEB), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Logout, null,
-                        tint     = Color(0xFFD32F2F),
-                        modifier = Modifier.size(24.dp))
-                }
-            },
-            title = {
-                Text("Keluar dari Akun?",
-                    fontWeight = FontWeight.Bold, fontSize = 16.sp,
-                    color = TextPrimary, textAlign = TextAlign.Center)
-            },
-            text = {
-                Text("Yakin ingin keluar dari akun organisasi ini?",
-                    fontSize = 13.sp, color = TextSecondary, textAlign = TextAlign.Center)
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        scope.launch {
-                            SessionPreferences(context).clearSession()
-                            viewModel.logout()
-                            viewModel.onLogoutDialogDismiss()
-                            while (backStack.isNotEmpty()) backStack.removeLastOrNull()
-                            backStack.add(Routes.WelcomeRoute)
-                        }
-                    },
-                    shape  = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
-                ) { Text("Ya, Keluar", fontSize = 13.sp) }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = { viewModel.onLogoutDialogDismiss() },
-                    shape   = RoundedCornerShape(12.dp)
-                ) { Text("Batal", fontSize = 13.sp) }
-            }
-        )
-    }
-
     if (showStatsSheet) {
-        val totalAll      = events.sumOf { it.registered_count ?: 0 }
-        val maxCount      = events.maxOfOrNull { it.registered_count ?: 0 }.let { if ((it ?: 0) < 1) 1 else it!! }
-            .let { if ((it ?: 0) < 1) 1 else it!! }
-
+        val sortedEvents = remember(events) {
+            events.sortedByDescending { it.registered_count ?: 0 }
+        }
+        val totalAll = sortedEvents.sumOf { it.registered_count ?: 0 }
+        val maxCount = (sortedEvents.maxOfOrNull { it.registered_count ?: 0 } ?: 0)
+        val referenceScale = maxOf(10, maxCount).toFloat()
         var barsVisible by remember { mutableStateOf(false) }
         LaunchedEffect(Unit) { barsVisible = true }
 
         ModalBottomSheet(
-            onDismissRequest = {
-                viewModel.onStatsSheetDismiss()
-                viewModel.onTabSelected(OrgTab.DASHBOARD)
-            },
-            sheetState     = statsSheetState,
-            containerColor = CardWhite,
-            shape          = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+            onDismissRequest = { viewModel.onStatsSheetDismiss() },
+            sheetState       = statsSheetState,
+            containerColor   = CardWhite,
+            shape            = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -160,54 +113,52 @@ fun OrgDashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Spacer(Modifier.height(4.dp))
-
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier         = Modifier
                             .size(36.dp)
-                            .background(Color(0xFFEAF2FF), CircleShape),
+                            .background(AppColors.InfoBg, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.BarChart, null,
-                            tint     = AddButtonColor,
-                            modifier = Modifier.size(18.dp))
+                        Icon(
+                            Icons.Default.PieChart, null,
+                            tint     = AppColors.InfoText,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                     Spacer(Modifier.width(10.dp))
                     Column {
-                        Text("Statistik Pendaftar",
+                        Text(
+                            "Statistik Pendaftar",
                             fontWeight = FontWeight.Bold,
                             fontSize   = 16.sp,
-                            color      = TextPrimary)
-                        Text("$totalAll total pendaftar di semua kegiatan",
-                            fontSize = 12.sp, color = TextSecondary)
+                            color      = TextPrimary
+                        )
+                        Text(
+                            "$totalAll total pendaftar di semua kegiatan",
+                            fontSize = 12.sp,
+                            color    = TextSecondary
+                        )
                     }
                 }
-
-                Row(
-                    modifier              = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.CenterVertically
-                ) {
-                    Text("Total Pendaftar per Kegiatan",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize   = 13.sp,
-                        color      = TextPrimary)
-                }
-
+                Text(
+                    "Total Pendaftar per Kegiatan",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize   = 13.sp,
+                    color      = TextPrimary
+                )
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                     modifier            = Modifier.heightIn(max = 340.dp)
                 ) {
-                    items(items = events, key = { "stat_${it.id}" }) { event ->
+                    items(items = sortedEvents, key = { "stat_${it.id}" }) { event ->
                         val count = event.registered_count ?: 0
-                        val ratio = count.toFloat() / maxCount.toFloat()
-
+                        val ratio = count.toFloat() / referenceScale
                         val animatedRatio by animateFloatAsState(
-                            targetValue    = if (barsVisible) ratio else 0f,
-                            animationSpec  = tween(durationMillis = 600),
-                            label          = "bar_${event.id}"
+                            targetValue   = if (barsVisible) ratio else 0f,
+                            animationSpec = tween(durationMillis = 600),
+                            label         = "bar_${event.id}"
                         )
-
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Row(
                                 modifier              = Modifier
@@ -227,27 +178,24 @@ fun OrgDashboardScreen(
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text       = "$count pendaftar",
+                                    text       = if (count == 0) "Belum ada pendaftar" else "$count pendaftar",
                                     fontSize   = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color      = AddButtonColor
+                                    fontWeight = if (count == 0) FontWeight.Normal else FontWeight.Bold,
+                                    color      = if (count == 0) TextSecondary else PrimaryBlue
                                 )
                             }
-
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(10.dp)
-                                    .background(Color(0xFFEAF2FF), RoundedCornerShape(50.dp))
+                                    .background(BluePale, RoundedCornerShape(50.dp))
                             ) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth(fraction = animatedRatio.coerceIn(0f, 1f))
                                         .height(10.dp)
                                         .background(
-                                            Brush.horizontalGradient(
-                                                listOf(Color(0xFF3B82F6), AddButtonColor)
-                                            ),
+                                            Brush.horizontalGradient(listOf(NavyDeep, PrimaryBlue)),
                                             RoundedCornerShape(50.dp)
                                         )
                                 )
@@ -258,7 +206,6 @@ fun OrgDashboardScreen(
             }
         }
     }
-
     val cancelTargetId by viewModel.cancelTargetId.collectAsState()
     val cancelSuccess  by viewModel.cancelSuccess.collectAsState()
     LaunchedEffect(cancelSuccess) {
@@ -272,12 +219,14 @@ fun OrgDashboardScreen(
         var reasonText by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { viewModel.onCancelEventDismiss() },
-            icon    = { Icon(Icons.Default.Cancel, null, tint = Color(0xFFCC2222)) },
             title   = { Text("Batalkan Kegiatan?", fontWeight = FontWeight.Bold) },
             text    = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Semua peserta akan menerima notifikasi pembatalan.",
-                        fontSize = 13.sp, color = Color(0xFF555555))
+                    Text(
+                        "Semua peserta akan menerima notifikasi pembatalan.",
+                        fontSize = 13.sp,
+                        color    = TextSecondary
+                    )
                     OutlinedTextField(
                         value         = reasonText,
                         onValueChange = { reasonText = it },
@@ -291,7 +240,7 @@ fun OrgDashboardScreen(
             confirmButton = {
                 Button(
                     onClick = { viewModel.onCancelEventConfirmed(reasonText.ifBlank { null }) },
-                    colors  = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC2222)),
+                    colors  = ButtonDefaults.buttonColors(containerColor = StatusRejectedText),
                     shape   = RoundedCornerShape(8.dp)
                 ) { Text("Ya, Batalkan") }
             },
@@ -306,17 +255,13 @@ fun OrgDashboardScreen(
         topBar       = {},
         bottomBar    = {
             OrgBottomBar(
-                selected  = selectedTab,
-                isEnabled = true,
-                onSelect  = { tab ->
+                selected       = selectedTab,
+                unreadMessages = 0,
+                onSelect       = { tab ->
                     when (tab) {
                         OrgTab.TAMBAH    -> backStack.add(Routes.AddActivityRoute)
-                        OrgTab.KANDIDAT  -> {
-                            val first = events.firstOrNull()
-                            if (first != null) backStack.add(Routes.CandidateListRoute(eventId = first.id))
-                            else scope.launch { snackbarHostState.showSnackbar("Belum ada kegiatan tersedia") }
-                        }
-                        OrgTab.STATISTIK -> { viewModel.onTabSelected(tab); viewModel.onStatsSheetShow() }
+                        OrgTab.KEGIATAN    -> backStack.add(Routes.OrgActivitiesRoute())
+                        OrgTab.PESAN     -> backStack.add(Routes.ChatListRoute(isOrganizer = true))
                         OrgTab.PROFIL    -> backStack.add(Routes.OrgProfileRoute)
                         OrgTab.DASHBOARD -> viewModel.onTabSelected(tab)
                     }
@@ -324,144 +269,486 @@ fun OrgDashboardScreen(
             )
         },
         containerColor = Color.Transparent
-    ) { innerPadding ->
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            BgColor, HeaderBgBottom, HeaderBgTop,
-                            HeaderBgMiddle, HeaderBgBottom, BgColor
-                        )
-                    )
-                )
+                .background(BgColor)
         ) {
             LazyColumn(
-                modifier            = Modifier.fillMaxSize().padding(innerPadding),
-                verticalArrangement = Arrangement.spacedBy(0.dp)
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = paddingValues.calculateBottomPadding() + 16.dp)
             ) {
-
                 item(key = "top_header") {
-                    Box(modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 20.dp)) {
-                        Row(
-                            modifier              = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment     = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text("Welcome,",
-                                    color    = TextPrimary.copy(alpha = 0.85f),
-                                    fontSize = 13.sp)
-                                Text(org?.name ?: "Organisasi",
-                                    color      = TextPrimary,
-                                    fontSize   = 20.sp,
-                                    fontWeight = FontWeight.Bold)
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                val unreadCount by remember { derivedStateOf { uiState.unreadNotifCount } }
-                                Box {
-                                    IconButton(onClick = {
-                                        viewModel.onNotificationsOpened()
-                                        backStack.add(Routes.NotificationsRoute)
-                                    }) {
-                                        Icon(Icons.Default.Notifications, "Notifikasi",
-                                            tint     = TextPrimary,
-                                            modifier = Modifier.size(28.dp))
-                                    }
-                                    if (unreadCount > 0) {
-                                        Badge(
-                                            modifier       = Modifier
-                                                .align(Alignment.TopEnd)
-                                                .offset(x = (-4).dp, y = 4.dp),
-                                            containerColor = MaterialTheme.colorScheme.error
-                                        ) {
-                                            Text(
-                                                if (unreadCount > 99) "99+" else unreadCount.toString(),
-                                                fontSize = 9.sp)
-                                        }
-                                    }
-                                }
-                                Spacer(Modifier.width(4.dp))
-                                IconButton(onClick = { viewModel.onLogoutDialogShow() }) {
-                                    Icon(Icons.Default.Logout, "Logout",
-                                        tint     = TextPrimary,
-                                        modifier = Modifier.size(28.dp))
-                                }
-                            }
-                        }
-                    }
-                }
-
-                item(key = "stat_cards") {
-                    val pendingCount = viewModel.pendingCount()
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 20.dp)
+                            .height(150.dp)
+                            .background(Brush.linearGradient(listOf(NavyDeep, PrimaryBlue)))
+                            .padding(horizontal = 20.dp)
+                            .padding(top = 24.dp)
                     ) {
-                        Card(
+                        Box(
+                            modifier = Modifier
+                                .size(130.dp)
+                                .offset(x = (-30).dp, y = (-30).dp)
+                                .background(Color.White.copy(alpha = 0.07f), CircleShape)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(100.dp)
+                                .align(Alignment.TopEnd)
+                                .offset(x = 20.dp, y = (-20).dp)
+                                .background(Color.White.copy(alpha = 0.07f), CircleShape)
+                        )
+
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { viewModel.onEventStatusSelected("pending_review") },
-                            shape  = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = CardPending)
+                                .align(Alignment.Center),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment     = Alignment.CenterVertically
                         ) {
-                            Column(
-                                modifier            = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 24.dp, horizontal = 20.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            Row(
+                                verticalAlignment     = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
                                 Box(
                                     modifier         = Modifier
                                         .size(52.dp)
-                                        .background(Color.White.copy(alpha = 0.15f), CircleShape),
+                                        .clip(CircleShape)
+                                        .background(Color.White.copy(alpha = 0.25f)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(Icons.Default.Warning, null,
-                                        tint     = Color.White,
-                                        modifier = Modifier.size(26.dp))
+                                    val avatarUrl = org?.logoUrl
+                                    if (!avatarUrl.isNullOrBlank()) {
+                                        AsyncImage(
+                                            model              = avatarUrl,
+                                            contentDescription = "Logo",
+                                            contentScale       = ContentScale.Crop,
+                                            modifier           = Modifier
+                                                .fillMaxSize()
+                                                .clip(CircleShape)
+                                        )
+                                    } else {
+                                        Icon(
+                                            Icons.Default.Business, null,
+                                            tint     = Color.White,
+                                            modifier = Modifier.size(26.dp)
+                                        )
+                                    }
                                 }
-                                Text("$pendingCount",
-                                    fontSize   = 40.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color      = Color.White,
-                                    textAlign  = TextAlign.Center)
-                                Text("Activity Pending",
-                                    fontSize  = 14.sp,
-                                    color     = Color.White,
-                                    fontWeight = FontWeight.SemiBold,
-                                    textAlign = TextAlign.Center)
-                                Text("Menunggu persetujuan admin",
-                                    fontSize  = 11.sp,
-                                    color     = Color.White.copy(0.75f),
-                                    textAlign = TextAlign.Center)
+                                Column {
+                                    Text(
+                                        "Welcome,",
+                                        color    = Color.White.copy(alpha = 0.75f),
+                                        fontSize = 11.sp
+                                    )
+                                    Text(
+                                        org?.name ?: "Organisasi",
+                                        color      = Color.White,
+                                        fontSize   = 17.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines   = 1,
+                                        overflow   = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                            val unreadCount by remember { derivedStateOf { uiState.unreadNotifCount } }
+                            Box(
+                                modifier         = Modifier
+                                    .size(42.dp)
+                                    .background(Color.White.copy(alpha = 0.18f), CircleShape)
+                                    .clickable {
+                                        viewModel.onNotificationsOpened()
+                                        backStack.add(Routes.NotificationsRoute)
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Notifications,
+                                    contentDescription = "Notifikasi",
+                                    tint               = Color.White,
+                                    modifier           = Modifier.size(22.dp)
+                                )
+                                if (unreadCount > 0) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(9.dp)
+                                            .background(NotifAccent, CircleShape)
+                                            .align(Alignment.TopEnd)
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
+                item(key = "overview_section") {
+                    val pendingCount   = viewModel.pendingCount()
+                    val activeCount    = events.count { it.status == "published" }
+                    val completedCount = events.count { it.status == "completed" }
+                    val cancelledCount = events.count { it.status == "cancelled" }
+                    val totalRegs      = events.sumOf { it.registered_count ?: 0 }
+                    val totalQuota = events.sumOf { it.quota ?: 0 }
+                    val registeredRatio = if (totalQuota > 0) totalRegs.toFloat() / totalQuota else 0f
+
+                    val totalEvents    = events.size
+                    val activeRatio    = if (totalEvents > 0) activeCount.toFloat() / totalEvents else 0f
+
+                    Column(
+                        modifier            = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Card(
+                            modifier  = Modifier.fillMaxWidth(),
+                            shape     = RoundedCornerShape(16.dp),
+                            colors    = CardDefaults.cardColors(containerColor = CardWhite),
+                            elevation = CardDefaults.cardElevation(2.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(IntrinsicSize.Min)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable { backStack.add(Routes.OrgActivitiesRoute()) }
+                                        .padding(14.dp)
+                                ) {
+                                    Row(
+                                        modifier              = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment     = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            verticalAlignment     = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Box(
+                                                modifier         = Modifier
+                                                    .size(24.dp)
+                                                    .background(PrimaryBlue.copy(alpha = 0.12f), RoundedCornerShape(7.dp)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(Icons.Default.Event, null, tint = PrimaryBlue, modifier = Modifier.size(14.dp))
+                                            }
+                                            Text("Kegiatan", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+                                        }
+                                        Icon(Icons.Default.ChevronRight, null, tint = TextSecondary.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
+                                    }
+                                    Spacer(Modifier.height(8.dp))
+                                    Text("$totalEvents", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                    Text("Total kegiatan kamu", fontSize = 10.sp, color = TextSecondary)
+                                    Spacer(Modifier.height(10.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(5.dp)
+                                            .background(BluePale.copy(alpha = 0.5f), RoundedCornerShape(50.dp))
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth(fraction = activeRatio.coerceIn(0f, 1f))
+                                                .height(5.dp)
+                                                .background(StatusActiveText, RoundedCornerShape(50.dp))
+                                        )
+                                    }
+                                    Spacer(Modifier.height(6.dp))
+                                    Text(
+                                        "$activeCount dari $totalEvents sedang aktif",
+                                        fontSize   = 9.sp,
+                                        color      = StatusActiveText,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .border(1.dp, BlueLight, RoundedCornerShape(50.dp))
+                                            .padding(vertical = 7.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text("Kelola Kegiatan", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = NavyDeep)
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .width(1.dp)
+                                        .fillMaxHeight()
+                                        .background(Color(0xFFEEF2F7))
+                                )
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable {
+                                            val first = events.firstOrNull()
+                                            if (first != null) backStack.add(Routes.CandidateListRoute(eventId = first.id))
+                                            else scope.launch { snackbarHostState.showSnackbar("Belum ada kegiatan tersedia") }
+                                        }
+                                        .padding(14.dp)
+                                ) {
+                                    Row(
+                                        modifier              = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment     = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            verticalAlignment     = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Box(
+                                                modifier         = Modifier
+                                                    .size(24.dp)
+                                                    .background(PrimaryBlue.copy(alpha = 0.12f), RoundedCornerShape(7.dp)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(Icons.Default.People, null, tint = PrimaryBlue, modifier = Modifier.size(14.dp))
+                                            }
+                                            Text("Pendaftar", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+                                        }
+                                        Icon(Icons.Default.ChevronRight, null, tint = TextSecondary.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
+                                    }
+                                    Spacer(Modifier.height(8.dp))
+                                    Text("$totalRegs", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                    Text("Total pendaftar masuk", fontSize = 10.sp, color = TextSecondary)
+                                    Spacer(Modifier.height(10.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(5.dp)
+                                            .background(BluePale.copy(alpha = 0.5f), RoundedCornerShape(50.dp))
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth(fraction = registeredRatio.coerceIn(0f, 1f))
+                                                .height(5.dp)
+                                                .background(BlueMid, RoundedCornerShape(50.dp))
+                                        )
+                                    }
+                                    Spacer(Modifier.height(6.dp))
+                                    Text(
+                                        "$totalRegs dari $totalQuota kuota terisi",
+                                        fontSize = 9.sp, color = BlueMid, fontWeight = FontWeight.Medium
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .border(1.dp, BlueLight, RoundedCornerShape(50.dp))
+                                            .padding(vertical = 7.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text("Lihat Pendaftar", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = NavyDeep)
+                                    }
+                                }
+                            }
+                        }
+                        Card(
+                            modifier  = Modifier.fillMaxWidth(),
+                            shape     = RoundedCornerShape(16.dp),
+                            colors    = CardDefaults.cardColors(containerColor = Color(0xFF6882DE)),
+                            elevation = CardDefaults.cardElevation(2.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(IntrinsicSize.Min)
+                            ) {
+                                StatusRingItem(
+                                    icon     = Icons.Default.EventAvailable,
+                                    value    = activeCount,
+                                    label    = "Aktif",
+                                    color    = Color(0xFF172554),
+                                    onClick  = { backStack.add(Routes.OrgActivitiesRoute(initialStatus = "published")) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .width(0.5.dp)
+                                        .fillMaxHeight()
+                                        .background(Color.White.copy(alpha = 0.3f))
+                                )
+                                StatusRingItem(
+                                    icon     = Icons.Default.HourglassTop,
+                                    value    = pendingCount,
+                                    label    = "Pending",
+                                    color    = Color(0xFF172554),
+                                    onClick  = { backStack.add(Routes.OrgActivitiesRoute(initialStatus = "pending_review")) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .width(0.5.dp)
+                                        .fillMaxHeight()
+                                        .background(Color.White.copy(alpha = 0.3f))
+                                )
+                                StatusRingItem(
+                                    icon     = Icons.Default.DoneAll,
+                                    value    = completedCount,
+                                    label    = "Selesai",
+                                    color    = Color(0xFF172554),
+                                    onClick  = { backStack.add(Routes.OrgActivitiesRoute(initialStatus = "completed")) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .width(0.5.dp)
+                                        .fillMaxHeight()
+                                        .background(Color.White.copy(alpha = 0.3f))
+                                )
+                                StatusRingItem(
+                                    icon     = Icons.Default.Block,
+                                    value    = cancelledCount,
+                                    label    = "Dibatalkan",
+                                    color    = Color(0xFF172554),
+                                    onClick  = { backStack.add(Routes.OrgActivitiesRoute(initialStatus = "cancelled")) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            modifier              = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp, vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            QuickActionItem(
+                                icon    = Icons.Default.Add,
+                                label   = "Tambah\nKegiatan",
+                                bg      = NavyDeep.copy(alpha = 0.10f),
+                                tint    = NavyDeep.copy(alpha = 0.80f),
+                                onClick = { backStack.add(Routes.AddActivityRoute) }
+                            )
+                            QuickActionItem(
+                                icon    = Icons.Default.PersonSearch,
+                                label   = "Pendaftar",
+                                bg      =NavyDeep.copy(alpha = 0.10f),
+                                tint    = NavyDeep.copy(alpha = 0.80f),
+                                onClick = {
+                                    val first = events.firstOrNull()
+                                    if (first != null) backStack.add(Routes.CandidateListRoute(eventId = first.id))
+                                    else scope.launch { snackbarHostState.showSnackbar("Belum ada kegiatan tersedia") }
+                                }
+                            )
+                            QuickActionItem(
+                                icon      = Icons.Default.PendingActions,
+                                label     = "Pengajuan",
+                                bg        = NavyDeep.copy(alpha = 0.10f),
+                                tint      = NavyDeep.copy(alpha = 0.80f),
+                                onClick   = { backStack.add(Routes.OrgActivitiesRoute(initialStatus = "pending_review")) }
+                            )
+                            QuickActionItem(
+                                icon    = Icons.Default.CalendarMonth,
+                                label   = "Kalender",
+                                bg      = NavyDeep.copy(alpha = 0.10f),
+                                tint    = NavyDeep.copy(alpha = 0.80f),
+                                onClick = { backStack.add(Routes.OrgScheduleRoute) }
+                            )
+                            QuickActionItem(
+                                icon    = Icons.Default.PieChart,
+                                label   = "Statistik",
+                                bg      = NavyDeep.copy(alpha = 0.10f),
+                                tint    = NavyDeep.copy(alpha = 0.80f),
+                                onClick = { viewModel.onStatsSheetShow() }
+                            )
+                        }
+                    }
+                }
+                item(key = "inspiration_banner") {
+                    Card(
+                        onClick   = { backStack.add(Routes.ActivitiesRoute) },
+                        modifier  = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        shape     = RoundedCornerShape(16.dp),
+                        colors    = CardDefaults.cardColors(
+                            containerColor = Color(0xFF7497DA).copy(alpha = 0.1f)
+                        ),
+                        border    = BorderStroke(1.dp, NavyDeep.copy(alpha = 0.1f)),
+                        elevation = CardDefaults.cardElevation(0.dp)
+                    ) {
+                        Row(
+                            modifier              = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment     = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Box(
+                                modifier         = Modifier
+                                    .size(42.dp)
+                                    .background(
+                                        Brush.linearGradient(listOf(NavyDeep, PrimaryBlue)),
+                                        RoundedCornerShape(12.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector        = Icons.Default.YoutubeSearchedFor,
+                                    contentDescription = null,
+                                    tint               = Color.White,
+                                    modifier           = Modifier.size(22.dp)
+                                )
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    "Butuh inspirasi kegiatan?",
+                                    fontSize   = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color      = NavyDeep
+                                )
+                                Text(
+                                    "Temukan ide kegiatan dari organisasi\ndi seluruh Indonesia.",
+                                    fontSize   = 11.sp,
+                                    color      = NavyDeep,
+                                    lineHeight = 16.sp
+                                )
+                            }
+                            Icon(
+                                imageVector        = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint               = NavyDeep.copy(alpha = 0.45f),
+                                modifier           = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
                 item(key = "activities_section_header") {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(4.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Kegiatan yang didaftarkan",
-                            fontSize   = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color      = TextPrimary)
+                        Column {
+                            Text(
+                                "Kegiatan yang didaftarkan",
+                                fontSize   = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color      = TextPrimary
+                            )
+                            Text(
+                                "${events.size} total kegiatan",
+                                fontSize = 11.sp,
+                                color    = TextSecondary
+                            )
+                        }
                         Spacer(Modifier.weight(1f))
+                        TextButton(
+                            onClick        = { backStack.add(Routes.OrgActivitiesRoute()) },
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("Lihat Semua", fontSize = 12.sp, color = Color(0xFF273F9D), fontWeight = FontWeight.SemiBold)
+                            Icon(Icons.Default.ChevronRight, null, tint = Color(0xFF273F9D), modifier = Modifier.size(16.dp))
+                        }
+
                     }
                 }
-
                 item(key = "event_status_filter") {
                     val statusFilter by remember { derivedStateOf { uiState.selectedEventStatus } }
                     val statusOptions = listOf(
@@ -472,14 +759,13 @@ fun OrgDashboardScreen(
                         "draft"          to "Draft",
                         "cancelled"      to "Dibatalkan"
                     )
-                    ScrollableRow_StatusChips(
+                    ScrollableStatusChips(
                         options  = statusOptions,
                         selected = statusFilter,
                         onSelect = { viewModel.onEventStatusSelected(it) }
                     )
                 }
-
-                items(items = uiState.filteredEvents, key = { "event_${it.id}" }) { event ->
+                items(items = uiState.filteredEvents.take(4), key = { "event_${it.id}" }) { event ->
                     val candidateCount = viewModel.candidateCountFor(event.id)
                     AnimatedVisibility(
                         visible = sectionsVisible,
@@ -491,124 +777,147 @@ fun OrgDashboardScreen(
                         Card(
                             modifier  = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 6.dp)
-                                .clickable { backStack.add(Routes.CandidateListRoute(eventId = event.id)) },
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
                             shape     = RoundedCornerShape(16.dp),
                             colors    = CardDefaults.cardColors(containerColor = CardWhite),
                             elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                         ) {
-                            Row(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
-                                if (!event.poster.isNullOrBlank()) {
-                                    AsyncImage(
-                                        model = event.poster,
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .size(72.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                    )
-                                } else {
+                            Column {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { backStack.add(Routes.EventDetailRoute(eventId = event.id)) }
+                                        .padding(14.dp)
+                                ) {
+                                    if (!event.poster.isNullOrBlank()) {
+                                        AsyncImage(
+                                            model              = event.poster,
+                                            contentDescription = null,
+                                            contentScale       = ContentScale.Crop,
+                                            modifier           = Modifier
+                                                .size(60.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                        )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(60.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(Brush.linearGradient(listOf(NavyDeep, PrimaryBlue))),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(Icons.Default.Event, null, tint = Color.White, modifier = Modifier.size(28.dp))
+                                        }
+                                    }
+                                    Spacer(Modifier.width(12.dp))
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            event.title,
+                                            fontSize   = 13.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color      = TextPrimary,
+                                            maxLines   = 2,
+                                            overflow   = TextOverflow.Ellipsis
+                                        )
+                                        Spacer(Modifier.height(4.dp))
+                                        val locationStr = buildString {
+                                            if (!event.location_name.isNullOrBlank()) append(event.location_name)
+                                            if (!event.city.isNullOrBlank()) {
+                                                if (isNotEmpty()) append(", ")
+                                                append(event.city)
+                                            }
+                                        }
+                                        if (locationStr.isNotBlank()) {
+                                            Row(
+                                                verticalAlignment     = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                            ) {
+                                                Icon(Icons.Default.LocationOn, null, tint = TextPrimary, modifier = Modifier.size(11.dp))
+                                                Text(
+                                                    locationStr, fontSize = 10.sp, color = TextSecondary,
+                                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                //Icon(Icons.Default.ChevronRight, null, tint = TextSecondary, modifier = Modifier.size(14.dp))
+                                            }
+                                            Spacer(Modifier.height(2.dp))
+                                        }
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.People, null, tint = TextPrimary, modifier = Modifier.size(11.dp))
+                                            Spacer(Modifier.width(2.dp))
+                                            Text("$candidateCount pendaftar", fontSize = 10.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
+                                        }
+                                    }
+
+                                    val (badgeColor, badgeBg, badgeText) = when (event.status) {
+                                        "published"      -> Triple(StatusActiveText,    StatusActiveBg,    "Aktif")
+                                        "pending_review" -> Triple(StatusPendingText,   StatusPendingBg,   "Pending")
+                                        "cancelled"      -> Triple(StatusRejectedText,  StatusRejectedBg,  "Dibatalkan")
+                                        "draft"          -> Triple(TextSecondary,        Color(0xFFECEFF1), "Draft")
+                                        "completed"      -> Triple(StatusCompletedText,  StatusCompletedBg, "Selesai")
+                                        else             -> Triple(TextSecondary,        Color(0xFFF0F0F0), event.status ?: "")
+                                    }
+                                    Surface(
+                                        shape    = RoundedCornerShape(topEnd = 16.dp, bottomStart = 16.dp),
+                                        color    = badgeBg,
+                                        modifier = Modifier.align(Alignment.Top)
+                                    ) {
+                                        Text(
+                                            badgeText,
+                                            fontSize   = 10.sp,
+                                            color      = badgeColor,
+                                            fontWeight = FontWeight.SemiBold,
+                                            modifier   = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                        )
+                                    }
+                                }
+                                val footerActions = buildList {
+                                    add(FooterAction(Icons.Default.Edit, "Edit", TextSecondary) {
+                                        backStack.add(Routes.EditActivityRoute(eventId = event.id))
+                                    })
+                                    if (event.status == "published") {
+                                        add(FooterAction(Icons.Default.Done, "Selesai", StatusActiveText) {
+                                            viewModel.onCompleteEvent(event.id)
+                                        })
+                                    }
+                                    if (event.status !in listOf("cancelled", "completed")) {
+                                        add(FooterAction(Icons.Default.Close, "Batalkan", StatusRejectedText) {
+                                            viewModel.onCancelEventRequest(event.id)
+                                        })
+                                    }
+                                }
+
+                                if (footerActions.isNotEmpty()) {
                                     Box(
                                         modifier = Modifier
-                                            .size(72.dp)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(
-                                                Brush.linearGradient(
-                                                    listOf(HeaderBgBottom.copy(alpha = 0.7f), AddButtonColor)
+                                            .fillMaxWidth()
+                                            .height(1.dp)
+                                            .background(Color(0xFFF1F5F9))
+                                    )
+                                    Row(modifier = Modifier.fillMaxWidth()) {
+                                        footerActions.forEachIndexed { index, action ->
+                                            if (index > 0) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .width(1.dp)
+                                                        .height(20.dp)
+                                                        .align(Alignment.CenterVertically)
+                                                        .background(Color(0xFFF1F5F9))
                                                 )
-                                            ),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(Icons.Default.Event, null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(32.dp))
-                                    }
-                                }
-                                Spacer(Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    val (badgeColor, badgeBg, badgeText) = when (event.status) {
-                                        "published"      -> Triple(StatusAcceptedText, StatusAcceptedBg, "Aktif")
-                                        "pending_review" -> Triple(StatusPendingText,  StatusPendingBg,  "Pending")
-                                        "cancelled"      -> Triple(StatusRejectedText, StatusRejectedBg, "Dibatalkan")
-                                        "draft"          -> Triple(Color(0xFF37474F),  Color(0xFFECEFF1), "Draft")
-                                        "completed"      -> Triple(StatusCompletedText, StatusCompletedBg, "Selesai")
-                                        else             -> Triple(TextSecondary, Color(0xFFF0F0F0), event.status ?: "")
-                                    }
-                                    Surface(shape = RoundedCornerShape(20.dp), color = badgeBg) {
-                                        Text(badgeText, fontSize = 9.sp, color = badgeColor,
-                                            fontWeight = FontWeight.SemiBold,
-                                            modifier   = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
-                                    }
-                                    Spacer(Modifier.height(4.dp))
-                                    Text(event.title,
-                                        fontSize   = 13.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color      = TextPrimary,
-                                        maxLines   = 2,
-                                        overflow   = TextOverflow.Ellipsis)
-                                    Spacer(Modifier.height(4.dp))
-                                    val locationStr = buildString {
-                                        if (!event.location_name.isNullOrBlank()) append(event.location_name)
-                                        if (!event.city.isNullOrBlank()) {
-                                            if (isNotEmpty()) append(", "); append(event.city)
-                                        }
-                                    }
-                                    if (locationStr.isNotBlank()) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(Icons.Default.LocationOn, null,
-                                                tint     = TextSecondary,
-                                                modifier = Modifier.size(11.dp))
-                                            Spacer(Modifier.width(2.dp))
-                                            Text(locationStr, fontSize = 10.sp, color = TextSecondary,
-                                                maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        }
-                                        Spacer(Modifier.height(2.dp))
-                                    }
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.People, null,
-                                            tint     = Color(0xFF3B82F6),
-                                            modifier = Modifier.size(11.dp))
-                                        Spacer(Modifier.width(2.dp))
-                                        Text("$candidateCount pendaftar",
-                                            fontSize   = 10.sp,
-                                            color      = Color(0xFF3B82F6),
-                                            fontWeight = FontWeight.Medium)
-                                    }
-                                }
-                                Column(
-                                    horizontalAlignment = Alignment.End,
-                                    verticalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    IconButton(
-                                        onClick  = { backStack.add(Routes.EditActivityRoute(eventId = event.id)) },
-                                        modifier = Modifier.size(28.dp)
-                                    ) {
-                                        Icon(Icons.Default.Edit, null,
-                                            tint     = TextSecondary,
-                                            modifier = Modifier.size(16.dp))
-                                    }
-
-                                    if (event.status == "published") {
-                                        Spacer(Modifier.height(4.dp))
-                                        IconButton(
-                                            onClick  = { viewModel.onCompleteEvent(event.id) },
-                                            modifier = Modifier.size(28.dp)
-                                        ) {
-                                            Icon(Icons.Default.Done, null,
-                                                tint     = StatusCompletedText,
-                                                modifier = Modifier.size(18.dp))
-                                        }
-                                    }
-
-                                    if (event.status !in listOf("cancelled", "completed")) {
-                                        Spacer(Modifier.height(4.dp))
-                                        IconButton(
-                                            onClick  = { viewModel.onCancelEventRequest(event.id) },
-                                            modifier = Modifier.size(28.dp)
-                                        ) {
-                                            Icon(Icons.Default.Cancel, null,
-                                                tint     = Color(0xFFCC2222),
-                                                modifier = Modifier.size(16.dp))
+                                            }
+                                            Row(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .clickable { action.onClick() }
+                                                    .padding(vertical = 9.dp),
+                                                horizontalArrangement = Arrangement.Center,
+                                                verticalAlignment     = Alignment.CenterVertically
+                                            ) {
+                                                Icon(action.icon, null, tint = action.color, modifier = Modifier.size(14.dp))
+                                                Spacer(Modifier.width(5.dp))
+                                                Text(action.label, fontSize = 10.sp, fontWeight = FontWeight.Medium, color = action.color)
+                                            }
                                         }
                                     }
                                 }
@@ -624,13 +933,101 @@ fun OrgDashboardScreen(
     }
 }
 
+private data class FooterAction(
+    val icon:    ImageVector,
+    val label:   String,
+    val color:   Color,
+    val onClick: () -> Unit
+)
+
 @Composable
-private fun MiniLabel(text: String, color: Color) {
-    Text(text, fontSize = 10.sp, color = color, fontWeight = FontWeight.Medium)
+private fun StatusRingItem(
+    icon:     ImageVector,
+    value:    Int,
+    label:    String,
+    color:    Color,
+    onClick:  () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier            = modifier
+            .clickable { onClick() }
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Box(
+            modifier         = Modifier
+                .size(32.dp)
+                .background(Color.White.copy(alpha = 0.12f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                icon, null,
+                tint     = Color.White,
+                modifier = Modifier.size(14.dp)
+            )
+        }
+        Text(
+            "$value",
+            fontSize   = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color      = Color.White,
+            lineHeight = 18.sp
+        )
+        Text(
+            label,
+            fontSize = 9.sp,
+            color    = Color.White.copy(alpha = 0.65f)
+        )
+    }
+}
+@Composable
+private fun QuickActionItem(
+    icon:      ImageVector,
+    label:     String,
+    bg:        Color,
+    tint:      Color,
+    showBadge: Boolean = false,
+    onClick:   () -> Unit
+) {
+    Column(
+        modifier            = Modifier
+            .width(58.dp)
+            .clickable { onClick() },
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier         = Modifier
+                .size(46.dp)
+                .clip(CircleShape)
+                .background(bg),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp))
+            if (showBadge) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .size(9.dp)
+                        .background(NotifAccent, CircleShape)
+                )
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text       = label,
+            fontSize   = 9.sp,
+            color      = TextSecondary,
+            textAlign  = TextAlign.Center,
+            lineHeight = 11.sp,
+            maxLines   = 2
+        )
+    }
 }
 
 @Composable
-private fun ScrollableRow_StatusChips(
+private fun ScrollableStatusChips(
     options:  List<Pair<String?, String>>,
     selected: String?,
     onSelect: (String?) -> Unit
@@ -644,31 +1041,43 @@ private fun ScrollableRow_StatusChips(
     ) {
         options.forEach { (value, label) ->
             val isSelected = selected == value
-            Surface(
-                shape    = RoundedCornerShape(20.dp),
-                color    = if (isSelected) hoverColor else Color(0xFFF0F0F0),
-                modifier = Modifier.clickable { onSelect(value) }
-            ) {
-                Text(
-                    text       = label,
-                    fontSize   = 12.sp,
-                    color      = if (isSelected) Color.White else Color(0xFF444444),
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                    modifier   = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+            FilterChip(
+                selected = isSelected,
+                onClick  = { onSelect(value) },
+                label    = {
+                    Text(
+                        text       = label,
+                        fontSize   = 12.sp,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = NavyDeep,
+                    selectedLabelColor     = Color.White,
+                    containerColor         = Color.White,
+                    labelColor             = NavyDeep
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled             = true,
+                    selected            = isSelected,
+                    borderColor         = NavyDeep.copy(alpha = 0.4f),
+                    selectedBorderColor = Color.Transparent,
+                    borderWidth         = 1.dp,
+                    selectedBorderWidth = 0.dp
                 )
-            }
+            )
         }
     }
 }
 
 @Composable
 private fun OrgBottomBar(
-    selected:  OrgTab,
-    onSelect:  (OrgTab) -> Unit,
-    isEnabled: Boolean = true
+    selected:       OrgTab,
+    unreadMessages: Int = 0,
+    onSelect:       (OrgTab) -> Unit
 ) {
     Surface(
-        modifier       = Modifier
+        modifier = Modifier
             .fillMaxWidth()
             .shadow(
                 elevation = 12.dp,
@@ -687,11 +1096,18 @@ private fun OrgBottomBar(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment     = Alignment.CenterVertically
         ) {
-            OrgNavItem(OrgTab.DASHBOARD, Icons.Default.Home,         "Home",     selected, onSelect)
-            OrgNavItem(OrgTab.KANDIDAT,  Icons.Default.Person,       "Kandidat", selected, onSelect)
-            OrgAddButton(onClick = { onSelect(OrgTab.TAMBAH) }, isEnabled = isEnabled)
-            OrgNavItem(OrgTab.STATISTIK, Icons.Default.BarChart,     "Statistik",selected, onSelect)
-            OrgNavItem(OrgTab.PROFIL,    Icons.Default.AccountCircle,"Profile",  selected, onSelect)
+            OrgNavItem(OrgTab.DASHBOARD, Icons.Default.Home,          "Home",     selected, onSelect)
+            OrgNavItem(OrgTab.KEGIATAN,  Icons.Default.VolunteerActivism,        "Kegiatan", selected, onSelect)
+            OrgAddButton(onClick = { onSelect(OrgTab.TAMBAH) })
+            OrgNavItemWithBadge(
+                tab         = OrgTab.PESAN,
+                icon        = Icons.Default.Chat,
+                label       = "Pesan",
+                selected    = selected,
+                onSelect    = onSelect,
+                unreadCount = unreadMessages
+            )
+            OrgNavItem(OrgTab.PROFIL, Icons.Default.AccountCircle, "Profile", selected, onSelect)
         }
     }
 }
@@ -705,9 +1121,9 @@ private fun OrgNavItem(
     onSelect: (OrgTab) -> Unit
 ) {
     val isSelected = selected == tab
-    val tint       = if (isSelected) hoverColor else TextSecondary
+    val tint       = if (isSelected) NavyDeep else TextSecondary
     Column(
-        modifier            = Modifier
+        modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable { onSelect(tab) }
             .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -715,44 +1131,71 @@ private fun OrgNavItem(
         verticalArrangement = Arrangement.Center
     ) {
         if (isSelected) {
-            Box(modifier = Modifier
-                .width(20.dp).height(3.dp)
-                .background(HeaderBgBottom, RoundedCornerShape(50)))
+            Box(modifier = Modifier.width(20.dp).height(3.dp).background(PrimaryBlue, RoundedCornerShape(50)))
             Spacer(Modifier.height(4.dp))
         } else {
             Spacer(Modifier.height(7.dp))
         }
         Icon(icon, label, tint = tint, modifier = Modifier.size(22.dp))
         Spacer(Modifier.height(2.dp))
-        Text(label,
-            fontSize   = 10.sp,
-            color      = tint,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal)
+        Text(label, fontSize = 10.sp, color = tint, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal)
     }
 }
 
 @Composable
-private fun OrgAddButton(onClick: () -> Unit, isEnabled: Boolean = true) {
+private fun OrgNavItemWithBadge(
+    tab:         OrgTab,
+    icon:        ImageVector,
+    label:       String,
+    selected:    OrgTab,
+    onSelect:    (OrgTab) -> Unit,
+    unreadCount: Int = 0
+) {
+    val isSelected = selected == tab
+    val tint       = if (isSelected) NavyDeep else TextSecondary
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onSelect(tab) }
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        if (isSelected) {
+            Box(modifier = Modifier.width(20.dp).height(3.dp).background(PrimaryBlue, RoundedCornerShape(50)))
+            Spacer(Modifier.height(4.dp))
+        } else {
+            Spacer(Modifier.height(7.dp))
+        }
+        Box(contentAlignment = Alignment.Center) {
+            Icon(icon, label, tint = tint, modifier = Modifier.size(22.dp))
+            if (unreadCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 4.dp, y = (-3).dp)
+                        .size(8.dp)
+                        .background(NotifAccent, CircleShape)
+                        .border(1.5.dp, CardWhite, CircleShape)
+                )
+            }
+        }
+        Spacer(Modifier.height(2.dp))
+        Text(label, fontSize = 10.sp, color = tint, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal)
+    }
+}
+
+@Composable
+private fun OrgAddButton(onClick: () -> Unit) {
     Box(
-        modifier         = Modifier
+        modifier = Modifier
             .size(52.dp)
-            .shadow(
-                elevation = if (isEnabled) 6.dp else 0.dp,
-                shape     = CircleShape
-            )
-            .background(
-                if (isEnabled)
-                    Brush.linearGradient(listOf(hoverColor, Color(0xFF82B8E8)))
-                else
-                    Brush.linearGradient(listOf(Color(0xFFB0B0B0), Color(0xFFC0C0C0))),
-                CircleShape
-            )
+            .shadow(elevation = 6.dp, shape = CircleShape)
+            .background(Brush.linearGradient(listOf(NavyDeep, PrimaryBlue)), CircleShape)
             .clip(CircleShape)
-            .clickable(enabled = isEnabled) { onClick() },
+            .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Icon(Icons.Default.Add, "Tambah Kegiatan",
-            tint     = Color.White,
-            modifier = Modifier.size(26.dp))
+        Icon(Icons.Default.Add, contentDescription = "Tambah Kegiatan", tint = Color.White, modifier = Modifier.size(26.dp))
     }
 }

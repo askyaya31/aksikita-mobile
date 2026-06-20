@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.Chat
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +37,7 @@ import com.example.prototypevolunteerapp.data.remote.dto.OrgDto
 import com.example.prototypevolunteerapp.ui.components.AppFooter
 
 private val NavyDark     = Color(0xFF1E3A8A)
+private val NavyLight     = Color(0xFF4159BE)
 private val PrimaryBlue  = Color(0xFF3B82F6)
 private val TextDark     = Color(0xFF0F172A)
 private val TextMuted    = Color(0xFF64748B)
@@ -73,7 +75,6 @@ fun ActivityDetailScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Snackbar untuk feedback
     LaunchedEffect(uiState.feedbackMessage) {
         uiState.feedbackMessage?.let {
             snackbarHostState.showSnackbar(it)
@@ -81,8 +82,6 @@ fun ActivityDetailScreen(
         }
     }
 
-    // Snackbar like & save
-    // Kita track perubahan isLiked & isSaved, tapi skip trigger pertama
     val isLikedInitialized = remember { mutableStateOf(false) }
     val isSavedInitialized = remember { mutableStateOf(false) }
 
@@ -100,7 +99,6 @@ fun ActivityDetailScreen(
         )
     }
 
-    // Dialog konfirmasi pembatalan
     if (showCancelDialog) {
         AlertDialog(
             onDismissRequest = { showCancelDialog = false },
@@ -209,7 +207,6 @@ fun ActivityDetailScreen(
                         )
                 )
 
-                // Tombol kembali
                 Box(
                     modifier = Modifier
                         .padding(16.dp)
@@ -227,7 +224,6 @@ fun ActivityDetailScreen(
                     )
                 }
 
-                // Tombol like
                 Box(
                     modifier = Modifier
                         .padding(16.dp)
@@ -247,7 +243,6 @@ fun ActivityDetailScreen(
                 }
             }
 
-            // Info Card
             Card(
                 modifier  = Modifier
                     .fillMaxWidth()
@@ -308,8 +303,6 @@ fun ActivityDetailScreen(
                             )
                         }
                     }
-
-                    // Judul
                     Text(
                         displayTitle,
                         fontSize   = 20.sp,
@@ -318,7 +311,6 @@ fun ActivityDetailScreen(
                         lineHeight = 27.sp
                     )
 
-                    // Info organisasi
                     if (displayOrg != null) {
                         Row(
                             modifier          = Modifier
@@ -364,7 +356,7 @@ fun ActivityDetailScreen(
                                 )
                                 val isVerified = displayOrg.verification_status == "verified"
                                 Text(
-                                    if (isVerified) "✓ Terverifikasi" else "Belum Terverifikasi",
+                                    if (isVerified) "Terverifikasi" else "Belum Terverifikasi",
                                     fontSize = 11.sp,
                                     color    = if (isVerified) Color(0xFF2E7D32) else TextMuted
                                 )
@@ -419,55 +411,85 @@ fun ActivityDetailScreen(
                         }
                     }
 
-                    Row(
-                        modifier              = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment     = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        if (displayRemaining != null) {
-                            val isFull = uiState.event?.is_full == true
+
+                        if (displayRemaining != null || displayStatus != null) {
                             Row(
-                                verticalAlignment     = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                modifier              = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment     = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Group, null,
-                                    tint     = if (isFull) RedCancel else AccentOrange,
-                                    modifier = Modifier.size(15.dp))
-                                Text(
-                                    if (isFull) "Kuota penuh" else "$displayRemaining spots left",
-                                    fontSize   = 12.sp,
-                                    color      = if (isFull) RedCancel else AccentOrange,
-                                    fontWeight = FontWeight.SemiBold
-                                )
+                                if (displayRemaining != null) {
+                                    val isFull = uiState.event?.is_full == true
+                                    Row(
+                                        verticalAlignment     = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                    ) {
+                                        Icon(Icons.Default.Group, null,
+                                            tint     = if (isFull) RedCancel else AccentOrange,
+                                            modifier = Modifier.size(15.dp))
+                                        Text(
+                                            if (isFull) "Kuota penuh" else "$displayRemaining spot tersisa",
+                                            fontSize   = 12.sp,
+                                            color      = if (isFull) RedCancel else AccentOrange,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                } else {
+                                    Spacer(Modifier.width(1.dp))
+                                }
+
+                                if (displayStatus != null) {
+                                    val (badgeColor, badgeLabel) = when (displayStatus) {
+                                        "published"      -> Color(0xFF4CAF50) to "Dibuka"
+                                        "completed"      -> Color(0xFF9E9E9E) to "Selesai"
+                                        "cancelled"      -> Color(0xFFF44336) to "Dibatalkan"
+                                        "pending_review" -> Color(0xFFFF9800) to "Menunggu Review"
+                                        else             -> Color(0xFF9E9E9E) to displayStatus
+                                    }
+                                    Surface(
+                                        shape = RoundedCornerShape(99.dp),
+                                        color = badgeColor.copy(alpha = 0.12f)
+                                    ) {
+                                        Text(
+                                            badgeLabel,
+                                            color      = badgeColor,
+                                            fontSize   = 11.sp,
+                                            modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
                             }
                         }
 
-                        if (displayStatus != null) {
-                            val (badgeColor, badgeLabel) = when (displayStatus) {
-                                "published"      -> Color(0xFF4CAF50) to "Dibuka"
-                                "completed"      -> Color(0xFF9E9E9E) to "Selesai"
-                                "cancelled"      -> Color(0xFFF44336) to "Dibatalkan"
-                                "pending_review" -> Color(0xFFFF9800) to "Menunggu Review"
-                                else             -> Color(0xFF9E9E9E) to displayStatus
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(99.dp),
-                                color = badgeColor.copy(alpha = 0.12f)
+                        if (uiState.registrationStatus == "confirmed" && uiState.chatRoomId != null) {
+                            Button(
+                                onClick = {
+                                    backStack.add(
+                                        Routes.ChatRoomRoute(
+                                            roomId        = uiState.chatRoomId!!,
+                                            eventTitle    = displayTitle,
+                                            organizerName = displayOrg?.organization_name ?: "Organisasi"
+                                        )
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth().height(35.dp),
+                                shape    = RoundedCornerShape(15.dp),
+                                colors   = ButtonDefaults.buttonColors(containerColor = NavyLight)
                             ) {
-                                Text(
-                                    badgeLabel,
-                                    color      = badgeColor,
-                                    fontSize   = 11.sp,
-                                    modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                    fontWeight = FontWeight.SemiBold
-                                )
+                                Icon(Icons.Outlined.Chat, null, modifier = Modifier.size(17.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Chat Organisasi", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                             }
                         }
                     }
                 }
             }
 
-            // About, Requirements, Action Buttons
             Column(
                 modifier = Modifier
                     .fillMaxWidth()

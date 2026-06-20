@@ -7,7 +7,13 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.example.prototypevolunteerapp.ui.screens.organizer.OrgActivitiesScreen
 import com.example.prototypevolunteerapp.ui.screens.LoginScreen
+import com.example.prototypevolunteerapp.ui.screens.chat.ChatListScreen
+import com.example.prototypevolunteerapp.ui.screens.organizer.OrgScheduleScreen
+import com.example.prototypevolunteerapp.ui.screens.chat.ChatRoomScreen
+import com.example.prototypevolunteerapp.ui.screens.schedule.ScheduleScreen
+import com.example.prototypevolunteerapp.ui.screens.recommendations.RecommendationsScreen
 import com.example.prototypevolunteerapp.ui.screens.activities.ActivitiesScreen
 import com.example.prototypevolunteerapp.ui.screens.activities.ActivityDetailScreen
 import com.example.prototypevolunteerapp.ui.screens.dashboard.HomeScreen
@@ -17,10 +23,12 @@ import com.example.prototypevolunteerapp.ui.screens.notifications.NotificationsD
 import com.example.prototypevolunteerapp.ui.screens.organizer.AddActivityScreen
 import com.example.prototypevolunteerapp.ui.screens.organizer.CandidateDetailScreen
 import com.example.prototypevolunteerapp.ui.screens.organizer.CandidateListScreen
+import com.example.prototypevolunteerapp.ui.screens.organizer.EventDetailScreen
 import com.example.prototypevolunteerapp.ui.screens.organizer.EditActivityScreen
 import com.example.prototypevolunteerapp.ui.screens.organizer.OrgDashboardScreen
 import com.example.prototypevolunteerapp.ui.screens.organizer.EditOrgProfileScreen
 import com.example.prototypevolunteerapp.ui.screens.organizer.OrgProfileScreen
+import com.example.prototypevolunteerapp.ui.screens.organizer.OrgScheduleScreen
 import com.example.prototypevolunteerapp.ui.screens.saved.SavedActivitiesScreen
 import com.example.prototypevolunteerapp.ui.screens.liked.LikedActivitiesScreen
 import com.example.prototypevolunteerapp.ui.screens.profile.ProfileScreen
@@ -84,6 +92,9 @@ fun ComposeApp() {
                     entry<Routes.CandidateListRoute> {
                         CandidateListScreen(eventId = it.eventId)
                     }
+                    entry<Routes.EventDetailRoute> {
+                        EventDetailScreen(eventId = it.eventId)
+                    }
                     entry<Routes.CandidateDetailRoute> {
                         CandidateDetailScreen(candidateId = it.candidateId)
                     }
@@ -91,7 +102,27 @@ fun ComposeApp() {
                         EditActivityScreen(eventId = it.eventId)
                     }
                     entry<Routes.OrgProfileRoute> { OrgProfileScreen() }
+                    entry<Routes.OrgActivitiesRoute> {
+                        OrgActivitiesScreen(initialStatus = it.initialStatus)
+                    }
                     entry<Routes.EditOrgProfileRoute> { EditOrgProfileScreen() }
+                    entry<Routes.ChatListRoute> {
+                        ChatListScreen(isOrganizer = it.isOrganizer)
+                    }
+                    entry<Routes.ChatRoomRoute> {
+                        ChatRoomScreen(
+                            roomId        = it.roomId,
+                            eventTitle    = it.eventTitle,
+                            organizerName = it.organizerName,
+                            isOrganizer   = it.isOrganizer,
+                            organizerLogo = it.organizerLogo
+                        )
+                    }
+                    entry<Routes.OrgScheduleRoute> {
+                        OrgScheduleScreen()
+                    }
+                    entry<Routes.ScheduleRoute>        { ScheduleScreen() }
+                    entry<Routes.RecommendationsRoute> { RecommendationsScreen() }
                 }
             )
         }

@@ -78,8 +78,7 @@ interface ApiService {
 
     @DELETE("api/v1/volunteer/events/{id}/cancel")
     suspend fun cancelRegistration(
-        @Path("id") eventId: Int,
-        @Body request: CancelRegistrationRequest = CancelRegistrationRequest()
+        @Path("id") eventId: Int
     ): Response<Unit>
 
     @GET("api/v1/volunteer/registrations")
@@ -247,6 +246,8 @@ interface ApiService {
         @Path("id") id: Int,
         @Body reason: Map<String, String?> = emptyMap()
     ): Response<EventSingleResponse>
+    @GET("api/v1/volunteer/chats/unread-count")
+    suspend fun getChatUnreadCount(): Response<UnreadCountResponse>
 
     @GET("api/v1/organization/events/{id}/registrations")
     suspend fun getEventRegistrations(
@@ -291,4 +292,48 @@ interface ApiService {
 
     @PUT("api/v1/organization/notifications/mark-all-read")
     suspend fun markAllOrgNotificationsRead(): Response<Unit>
+
+    @GET("api/v1/volunteer/chats")
+    suspend fun getChatRooms(): List<ChatRoomDto>
+
+    @GET("api/v1/volunteer/chats/{roomId}/messages")
+    suspend fun getChatMessages(@Path("roomId") roomId: Int): List<ChatMessageDto>
+
+    @POST("api/v1/volunteer/chats/{roomId}/messages")
+    suspend fun sendMessage(
+        @Path("roomId") roomId: Int,
+        @Body body: SendMessageRequest
+    ): ChatMessageDto
+
+    @GET("api/v1/volunteer/chats/{roomId}/poll")
+    suspend fun pollMessages(
+        @Path("roomId") roomId: Int,
+        @Query("after") afterId: Int
+    ): ChatPollResponse
+
+    @GET("api/v1/volunteer/schedule")
+    suspend fun getSchedule(
+        @Query("month") month: Int,
+        @Query("year") year: Int
+    ): ScheduleResponse
+
+    @GET("api/v1/volunteer/recommendations")
+    suspend fun getRecommendations(): List<ActivityDto>
+    @GET("api/v1/organization/chats")
+    suspend fun getOrgChatRooms(): List<ChatRoomDto>
+
+    @GET("api/v1/organization/chats/{roomId}/messages")
+    suspend fun getOrgChatMessages(@Path("roomId") roomId: Int): List<ChatMessageDto>
+
+    @POST("api/v1/organization/chats/{roomId}/messages")
+    suspend fun sendOrgMessage(
+        @Path("roomId") roomId: Int,
+        @Body body: SendMessageRequest
+    ): ChatMessageDto
+
+    @GET("api/v1/organization/chats/{roomId}/poll")
+    suspend fun pollOrgMessages(
+        @Path("roomId") roomId: Int,
+        @Query("after") afterId: Int
+    ): ChatPollResponse
 }

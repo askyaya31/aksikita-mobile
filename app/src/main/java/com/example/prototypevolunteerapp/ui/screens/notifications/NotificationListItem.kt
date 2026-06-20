@@ -29,7 +29,7 @@ fun NotificationListItem(
     val isRead = notification.is_read
     val (icon, iconBg, iconTint) = notifIconStyle(notification.type)
     val (badgeColor, badgeLabel) = notifBadgeStyle(notification.type)
-
+    Spacer(Modifier.width(6.dp))
     Card(
         modifier  = modifier
             .fillMaxWidth()
@@ -37,7 +37,7 @@ fun NotificationListItem(
         shape     = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(if (isRead) 1.dp else 3.dp),
         colors    = CardDefaults.cardColors(
-            containerColor = if (isRead) Color.White else Color(0xFFEEF3FF)
+            containerColor = if (isRead) Color.White else Color(0xFFEFF6FF)
         )
     ) {
         Row(
@@ -45,7 +45,6 @@ fun NotificationListItem(
             verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Icon
             Box(
                 modifier         = Modifier
                     .size(48.dp)
@@ -54,8 +53,6 @@ fun NotificationListItem(
             ) {
                 Icon(icon, null, tint = iconTint, modifier = Modifier.size(24.dp))
             }
-
-            // Content
             Column(
                 modifier            = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -75,7 +72,6 @@ fun NotificationListItem(
                         modifier   = Modifier.weight(1f)
                     )
                     Spacer(Modifier.width(6.dp))
-                    // Badge tipe
                     if (badgeLabel != null) {
                         Surface(
                             shape = RoundedCornerShape(99.dp),
@@ -126,15 +122,15 @@ fun NotificationListItem(
 
 private fun notifBadgeStyle(type: String?): Pair<Color, String?> {
     return when (type) {
-        "registration_confirmed" -> Pair(Color(0xFF0E7B6C), "Accepted")
-        "registration_rejected"  -> Pair(Color(0xFFEF4444), "Rejected")
+        "registration_confirmed" -> Pair(Color(0xFF059669), "Diterima")
+        "registration_rejected"  -> Pair(Color(0xFFDC2626), "Ditolak")
         "event_updated"          -> Pair(Color(0xFF3B82F6), "Update")
-        "event_cancelled"        -> Pair(Color(0xFFD4900A), "Cancelled")
-        "new_registration"       -> Pair(Color(0xFF3B82F6), "New")
-        "event_reminder"         -> Pair(Color(0xFFD4900A), "Reminder")
-        "event_approved"         -> Pair(Color(0xFF0E7B6C), "Approved")
-        "event_rejected"         -> Pair(Color(0xFFE65100), "Rejected")
-        "registration_pending"   -> Pair(Color(0xFFD4900A), "Pending")
+        "event_cancelled"        -> Pair(Color(0xFFB45309), "Dibatalkan")
+        "new_registration"       -> Pair(Color(0xFF3B82F6), "Baru")
+        "event_reminder"         -> Pair(Color(0xFFB45309), "Pengingat")
+        "event_approved"         -> Pair(Color(0xFF059669), "Disetujui")
+        "event_rejected"         -> Pair(Color(0xFFDC2626), "Ditolak")
+        "registration_pending"   -> Pair(Color(0xFFB45309), "Pending")
         else                     -> Pair(Color(0xFF3B82F6), null)
     }
 }
@@ -142,16 +138,16 @@ private fun notifBadgeStyle(type: String?): Pair<Color, String?> {
 @Composable
 private fun notifIconStyle(type: String?): Triple<ImageVector, Color, Color> {
     return when (type) {
-        "registration_pending"   -> Triple(Icons.Default.HourglassEmpty, Color(0xFFFEF3C7), Color(0xFFD4900A))
-        "registration_confirmed" -> Triple(Icons.Default.CheckCircle,    Color(0xFFE3F5F2), Color(0xFF0E7B6C))
-        "registration_rejected"  -> Triple(Icons.Default.Cancel,         Color(0xFFFEE2E2), Color(0xFFEF4444))
-        "attendance_recorded"    -> Triple(Icons.Default.HowToReg,       Color(0xFFE3F5F2), Color(0xFF0E7B6C))
-        "event_reminder"         -> Triple(Icons.Default.Alarm,          Color(0xFFFEF3C7), Color(0xFFD4900A))
+        "registration_pending"   -> Triple(Icons.Default.HourglassEmpty, Color(0xFFFEF3C7), Color(0xFFB45309))
+        "registration_confirmed" -> Triple(Icons.Default.CheckCircle,    Color(0xFFDCFCE7), Color(0xFF059669))
+        "registration_rejected"  -> Triple(Icons.Default.Cancel,         Color(0xFFFEE2E2), Color(0xFFDC2626))
+        "attendance_recorded"    -> Triple(Icons.Default.HowToReg,       Color(0xFFDCFCE7), Color(0xFF059669))
+        "event_reminder"         -> Triple(Icons.Default.Alarm,          Color(0xFFFEF3C7), Color(0xFFB45309))
         "event_updated"          -> Triple(Icons.Default.Update,         Color(0xFFEFF6FF), Color(0xFF3B82F6))
-        "event_cancelled"        -> Triple(Icons.Default.EventBusy,      Color(0xFFFEF3C7), Color(0xFFD4900A))
+        "event_cancelled"        -> Triple(Icons.Default.EventBusy,      Color(0xFFFEF3C7), Color(0xFFB45309))
         "new_registration"       -> Triple(Icons.Default.PersonAdd,      Color(0xFFEFF6FF), Color(0xFF3B82F6))
-        "event_approved"         -> Triple(Icons.Default.Verified,       Color(0xFFE3F5F2), Color(0xFF0E7B6C))
-        "event_rejected"         -> Triple(Icons.Default.GppBad,         Color(0xFFFFF3E0), Color(0xFFE65100))
+        "event_approved"         -> Triple(Icons.Default.Verified,       Color(0xFFDCFCE7), Color(0xFF059669))
+        "event_rejected"         -> Triple(Icons.Default.GppBad,         Color(0xFFFEE2E2), Color(0xFFDC2626))
         "event_reviewed"         -> Triple(Icons.Default.RateReview,     Color(0xFFEFF6FF), Color(0xFF1E3A8A))
         else                     -> Triple(Icons.Default.Notifications,  Color(0xFFEFF6FF), Color(0xFF3B82F6))
     }

@@ -51,9 +51,10 @@ data class UserDto(
     val is_active:            Boolean? = null,
     val created_at:           String?  = null,
     val volunteer_profile:    VolunteerProfileDto?    = null,
-    val organization_profile: OrganizationProfileDto? = null
+    val organization_profile: OrganizationProfileDto? = null,
+    val volunteer_stats:       VolunteerStatsDto?           = null,
+    val registration_history:  List<RegistrationHistoryDto>? = null
 )
-
 data class VolunteerProfileDto(
     val id:                  Int?          = null,
     val city:                String?       = null,
@@ -191,6 +192,7 @@ data class RegistrationDto(
     val cancelled_at:        String?  = null,
     val cancellation_reason: String?  = null,
     val notes:               String?  = null,
+    val chat_room_id:        Int?     = null,
     val event:               EventDto? = null,
     val user:                UserDto?  = null
 )
@@ -235,6 +237,19 @@ data class ApiListResponse<T>(
 data class ApiSingleResponse<T>(
     val data:    T?,
     val message: String? = null
+)
+data class VolunteerStatsDto(
+    val total_daftar:    Int = 0,
+    val total_confirmed: Int = 0,
+    val total_hadir:     Int = 0,
+    val total_batal:     Int = 0
+)
+
+data class RegistrationHistoryDto(
+    val event_title: String? = null,
+    val start_date:  String? = null,
+    val city:        String? = null,
+    val status:      String? = null
 )
 
 data class PaginatedResponse<T>(
@@ -281,3 +296,64 @@ data class LikedToggleResponse(
 data class GoogleLoginRequest(
     val id_token: String
 )
+
+data class ScheduleEventDto(
+    val registrationId: Int,
+    val eventId: Int,
+    val eventTitle: String,
+    val eventSlug: String,
+    val description: String? = null,
+    val organizerName: String,
+    val startDate: String,
+    val startTime: String?,
+    val endTime: String?,
+    val location: String,
+    val status: String,
+    val posterUrl: String?
+)
+
+data class ScheduleResponse(
+    val upcoming: List<ScheduleEventDto>,
+    val past: List<ScheduleEventDto>,
+    val eventsByDate: Map<String, List<ScheduleDateMarker>>
+)
+
+data class ScheduleDateMarker(
+    val title: String,
+    val startTime: String?,
+    val slug: String,
+    val status: String
+)
+data class ChatRoomDto(
+    val id: Int,
+    val eventTitle: String,
+    val eventSlug: String,
+    val organizerName: String,
+    val organizerLogo: String?,
+    val lastMessage: String?,
+    val lastMessageTime: String?,
+    val unreadCount: Int = 0,
+    val isOpen: Boolean
+)
+
+data class ChatMessageDto(
+    val id: Int,
+    val message: String,
+    val senderName: String,
+    val isMe: Boolean,
+    val createdAt: String
+
+)
+
+data class SendMessageRequest(
+    val message: String
+)
+
+data class ChatPollResponse(
+    val messages: List<ChatMessageDto>
+)
+
+data class ChatUnreadCountResponse(
+    val unread_count: Int = 0
+)
+typealias ActivityDto = EventDto
